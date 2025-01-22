@@ -62,6 +62,8 @@ if [ -v main ]; then
 	$CC build.c $cflags $LFLAGS $IFLAGS -o out/main
 	if [ $? -eq 0 ]; then
 		echo "info: main target built successfully."
+		rsync -r assets out
+		echo "info: synced assets directory."
 	else
 		exit 1
 	fi
