@@ -38,11 +38,11 @@ fi
 
 # compile and link arguments
 CC="clang"
-COMMON_CFLAGS="-Wall -Werror -Wextra"
+COMMON_CFLAGS="-Wall -Wextra"
 DEBUG_CFLAGS="-g"
 RELEASE_CFLAGS="-O3 -ffast-math -DNDEBUG -Wl,-s"
 LFLAGS="-Lvendor/raylib/src -lraylib -lm"
-IFLAGS="-Isrc -Ivendor/raylib/src"
+IFLAGS="-Isrc -Ivendor/raylib/src -Ivendor/raygui/src"
 
 # build targets
 if [ -v main ]; then

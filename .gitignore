@@ -117,6 +117,6 @@ tmp/*
 # project specific file
 logs
 
-vendor/*
+# vendor/*
 
 !models/*
