@@ -13,6 +13,10 @@ typedef uintptr_t uptr;
 typedef float f32;
 typedef double f64;
 
-// typedef uint8_t b8;
+typedef uint8_t b8;
 // #define true 1
 // #define false 0
+
+#define PRIVATE static
+#define PUBLIC static
+#define GLOBAL static
