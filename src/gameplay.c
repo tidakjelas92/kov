@@ -23,6 +23,12 @@ typedef enum GameAttackPhaseStep {
 	GAME_ATTACK_PHASE_STEP_DONE
 } GameAttackPhaseStep;
 
+typedef enum AttackType {
+	ATTACK_TYPE_NORMAL,
+	ATTACK_TYPE_AOE,
+	ATTACK_TYPE_SPLASH
+} AttackType;
+
 typedef struct StageInfo {
 	u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
 	u8 enemies_len;
@@ -65,15 +71,16 @@ GLOBAL MemArena gameplay_arena;
 typedef struct AttackInfo {
 	const char *name;
 	Sequence sequence;
+	AttackType type;
 	u16 damage;
 } AttackInfo;
 
 GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, 0 },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, 5 },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, 12 },
-	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, 4 },
-	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, 15 }
+	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_NORMAL, 0 },
+	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_NORMAL, 5 },
+	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_NORMAL, 12 },
+	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
+	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
 };
 #define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
 
@@ -99,14 +106,16 @@ typedef struct EnemyInfo {
 GLOBAL const EnemyInfo enemy_infos[] = {
 	{ "Training Dummy 1", 10, 0 },
 	{ "Training Dummy 2", 15, 0 },
-	{ "Instructor", 30, 1 }
+	{ "Instructor", 30, 1 },
+	{ "Goblin", 6, 1 }
 };
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
 GLOBAL const StageInfo gameplay_stage_infos[] = {
 	{{ 0, 0, 0, 0, 0 }, 1},
 	{{ 0, 1, 0, 0, 0 }, 3},
-	{{ 2, 0, 0, 0, 0 }, 1}
+	{{ 2, 0, 0, 0, 0 }, 1},
+	{{ 3, 3, 3, 3, 3 }, 5},
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
@@ -275,25 +284,55 @@ PUBLIC void game_attack_update(f32 delta) {
 	case GAME_ATTACK_PHASE_STEP_PLAYER: {
 		game_context.elapsed += delta;
 		if (game_context.elapsed >= 0.5f) {
-			const AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
+			const AttackInfo *attack_info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
 
-			// TODO: ATTACK TYPES: NORMAL, AOE, SPLASH
-			u8 idx = 0;
-
-			for (u32 i = 0; i < stage_info->enemies_len; i++) {
-				if (game_context.enemy_healths[i] > 0) {
-					idx = i;
-					break;
+			switch (attack_info->type) {
+			case ATTACK_TYPE_NORMAL: {
+				u8 idx = 0;
+				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+					if (game_context.enemy_healths[i] > 0) {
+						idx = i;
+						break;
+					}
 				}
+
+				if (game_context.enemy_healths[idx] >= attack_info->damage) {
+					game_context.enemy_healths[idx] -= attack_info->damage;
+				} else {
+					game_context.enemy_healths[idx] = 0;
+				}
+			} break;
+			case ATTACK_TYPE_AOE: {
+				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+					if (game_context.enemy_healths[i] >= attack_info->damage) {
+						game_context.enemy_healths[i] -= attack_info->damage;
+					} else {
+						game_context.enemy_healths[i] = 0;
+					}
+				}
+			} break;
+			case ATTACK_TYPE_SPLASH: {
+				u16 applied = 0;
+				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+					if (game_context.enemy_healths[i] > 0) {
+						u16 remainder = attack_info->damage - applied;
+						if (game_context.enemy_healths[i] >= remainder) {
+							applied += remainder;
+							game_context.enemy_healths[i] -= remainder;
+						} else {
+							applied += remainder - game_context.enemy_healths[i];
+							game_context.enemy_healths[i] = 0;
+						}
+
+						if (applied >= attack_info->damage) {
+							break;
+						}
+					}
+				}
+			} break;
 			}
 
-			if (game_context.enemy_healths[idx] >= info->damage) {
-				game_context.enemy_healths[idx] -= info->damage;
-			} else {
-				game_context.enemy_healths[idx] = 0;
-			}
-
-			TraceLog(LOG_INFO, "player %s - %u", info->name, info->damage);
+			TraceLog(LOG_INFO, "player %s - %u", attack_info->name, attack_info->damage);
 			game_context.attack_position += 1;
 			game_context.elapsed = 0.0f;
 			if (game_context.attack_position >= game_context.attack_count) {
