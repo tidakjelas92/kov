@@ -2,7 +2,7 @@
 #define SCREEN_HEIGHT 600
 
 PRIVATE void draw_debug_fps(void) {
-	char buffer[10] = {};
+	char buffer[10] = { 0 };
 	snprintf(buffer, sizeof(buffer), "%d fps", GetFPS());
 	DrawText(buffer, 5, 5, 10, THEME_BLACK);
 }
