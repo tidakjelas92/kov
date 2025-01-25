@@ -1,15 +1,11 @@
 #define MAX_INPUT_PER_SEQUENCE 8
 #define MAX_ATTACK_PER_TURN 32
 #define MAX_ENEMIES_PER_STAGE 5
+#define MAX_PLAYER_HEALTH 20
 
 typedef struct Sequence {
 	u8 buffer[MAX_INPUT_PER_SEQUENCE];
 } Sequence;
-
-typedef struct Health {
-	u16 max;
-	u16 value;
-} Health;
 
 typedef enum GamePhase {
 	GAME_PHASE_START,
@@ -41,7 +37,7 @@ typedef struct GameContext {
 	const StageInfo *stage_infos;
 
 	f32 elapsed;
-	Health player_health;
+	u16 player_health;
 	GamePhase phase;
 	GameAttackPhaseStep attack_phase_step;
 
@@ -179,8 +175,7 @@ PUBLIC void gameplay_init(void) {
 	memset(&game_context, 0, sizeof(GameContext));
 	game_context.input_times = gameplay_input_times;
 	game_context.input_times_len = GAMEPLAY_INPUT_TIMES_LEN;
-	game_context.player_health.max = 20;
-	game_context.player_health.value = 20;
+	game_context.player_health = MAX_PLAYER_HEALTH;
 	game_context.stage_infos = gameplay_stage_infos;
 	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
 	game_context.enemy_healths = (u16 *)mem_arena_alloc(&gameplay_arena, sizeof(u16) * MAX_ENEMIES_PER_STAGE);
@@ -319,10 +314,10 @@ PUBLIC void game_attack_update(f32 delta) {
 				const EnemyAttackInfo *info = &enemy_attack_infos[enemy_infos[enemy_id].attack_id];
 				TraceLog(LOG_INFO, "(%d) %s: %s - %u", game_context.enemy_attack_position, enemy_info->name, info->name, info->damage);
 
-				if (game_context.player_health.value >= info->damage) {
-					game_context.player_health.value -= info->damage;
+				if (game_context.player_health >= info->damage) {
+					game_context.player_health -= info->damage;
 				} else {
-					game_context.player_health.value = 0;
+					game_context.player_health = 0;
 				}
 			}
 
@@ -342,7 +337,7 @@ PUBLIC void game_attack_update(f32 delta) {
 }
 
 PRIVATE void game_check_update(GameContext *context) {
-	if (context->player_health.value == 0) {
+	if (context->player_health == 0) {
 		scene_set_scene(SCENE_GAME_OVER);
 	} else {
 		const StageInfo *stage_info = &context->stage_infos[context->stage];
@@ -419,7 +414,7 @@ PUBLIC void gameplay_render(void) {
 	ui_draw_health_bar(
 		(Vector2){ 100, 250 },
 		160,
-		(f32)game_context.player_health.value / (f32)game_context.player_health.max
+		(f32)game_context.player_health / (f32)MAX_PLAYER_HEALTH
 	);
 
 	const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
