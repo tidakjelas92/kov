@@ -47,6 +47,7 @@ typedef struct GameContext {
 } GameContext;
 
 GLOBAL GameContext game_context;
+GLOBAL b8 paused;
 
 typedef struct AttackInfo {
 	const char *name;
@@ -140,6 +141,8 @@ PUBLIC void gameplay_init(void) {
 	game_context.player_health.value = 20;
 	game_context.enemies = gameplay_enemies;
 	game_context.enemies_len = GAMEPLAY_ENEMIES_LEN;
+
+	paused = false;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -181,92 +184,102 @@ PRIVATE void game_add_damage(Health *health, u32 damage) {
 }
 
 PUBLIC void gameplay_update(f32 delta) {
-	switch (game_context.phase) {
-	case GAME_PHASE_PREPARE: {
-		game_context.elapsed += delta;
-		if (game_context.elapsed >= 1.0f) {
-			game_set_phase(GAME_PHASE_INPUT);
-		}
-	} break;
-	case GAME_PHASE_INPUT: {
-		game_context.elapsed += delta;
-		if (game_context.elapsed >= game_context.input_time[game_context.input_time_position]) {
-			game_set_phase(GAME_PHASE_ATTACK);
-		} else {
-			if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
-				if (IsKeyPressed(KEY_W)) {
-					game_add_input(1);
-					PlaySound(resources_click_1_sound);
-				} else if (IsKeyPressed(KEY_D)) {
-					game_add_input(2);
-					PlaySound(resources_click_2_sound);
-				} else if (IsKeyPressed(KEY_S)) {
-					game_add_input(3);
-					PlaySound(resources_click_3_sound);
-				} else if (IsKeyPressed(KEY_A)) {
-					game_add_input(4);
-					PlaySound(resources_click_4_sound);
-				}
-			}
+	if (IsKeyPressed(KEY_ESCAPE)) {
+		paused = !paused;
+		PlaySound(resources_switch_2_sound);
+	}
 
-			if (IsKeyPressed(KEY_SPACE)) {
-				u8 idx = 0;
-				if (sequence_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
-					if (idx == 0) {
+	if (paused) {
+		if (IsKeyPressed(KEY_Q)) {
+			scene_set_scene(SCENE_INTRO);
+		}
+	} else {
+		switch (game_context.phase) {
+		case GAME_PHASE_PREPARE: {
+			game_context.elapsed += delta;
+			if (game_context.elapsed >= 1.0f) {
+				game_set_phase(GAME_PHASE_INPUT);
+			}
+		} break;
+		case GAME_PHASE_INPUT: {
+			game_context.elapsed += delta;
+			if (game_context.elapsed >= game_context.input_time[game_context.input_time_position]) {
+				game_set_phase(GAME_PHASE_ATTACK);
+			} else {
+				if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
+					if (IsKeyPressed(KEY_W)) {
+						game_add_input(1);
+						PlaySound(resources_click_1_sound);
+					} else if (IsKeyPressed(KEY_D)) {
+						game_add_input(2);
+						PlaySound(resources_click_2_sound);
+					} else if (IsKeyPressed(KEY_S)) {
+						game_add_input(3);
+						PlaySound(resources_click_3_sound);
+					} else if (IsKeyPressed(KEY_A)) {
+						game_add_input(4);
+						PlaySound(resources_click_4_sound);
+					}
+				}
+
+				if (IsKeyPressed(KEY_SPACE)) {
+					u8 idx = 0;
+					if (sequence_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
+						if (idx == 0) {
+							PlaySound(resources_error_5_sound);
+						}
+					} else {
 						PlaySound(resources_error_5_sound);
 					}
-				} else {
-					PlaySound(resources_error_5_sound);
+					game_context.attack_queue[game_context.attack_count] = idx;
+					game_context.attack_count += 1;
+
+					memset(&game_context.active_sequence, 0, sizeof(Sequence));
+					game_context.active_position = 0;
 				}
-				game_context.attack_queue[game_context.attack_count] = idx;
-				game_context.attack_count += 1;
-
-				memset(&game_context.active_sequence, 0, sizeof(Sequence));
-				game_context.active_position = 0;
 			}
-		}
-	} break;
-	case GAME_PHASE_ATTACK: {
-		if (game_context.attack_position < game_context.attack_count) {
-			game_context.elapsed += delta;
-			if (game_context.elapsed >= 0.5f) {
-				AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
+		} break;
+		case GAME_PHASE_ATTACK: {
+			if (game_context.attack_position < game_context.attack_count) {
+				game_context.elapsed += delta;
+				if (game_context.elapsed >= 0.5f) {
+					AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
 
-				Enemy *enemy = &game_context.enemies[game_context.stage];
-				game_add_damage(&enemy->health, info->damage);
+					Enemy *enemy = &game_context.enemies[game_context.stage];
+					game_add_damage(&enemy->health, info->damage);
 
-				TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
-				game_context.attack_position += 1;
-				game_context.elapsed = 0.0f;
-			}
-		} else if (game_context.enemy_attack_position < game_context.enemy_attack_count) {
-			game_context.elapsed += delta;
-			if (game_context.elapsed >= 0.5f) {
-				EnemyAttackInfo *info = &enemy_attack_infos[game_context.enemy_attack_queue[game_context.enemy_attack_position]];
-				TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
-				game_add_damage(&game_context.player_health, info->damage);
-				game_context.enemy_attack_position += 1;
-				game_context.elapsed = 0.0f;
-			}
-		} else {
-			game_set_phase(GAME_PHASE_CHECK);
-		}
-	} break;
-	case GAME_PHASE_CHECK: {
-		// TODO: check if player lose or win
-		if (game_context.player_health.value == 0) {
-			// TODO: lose
-		} else if (game_context.enemies[game_context.stage].health.value == 0) {
-			game_context.stage += 1;
-			if (game_context.stage < game_context.enemies_len) {
-				game_set_phase(GAME_PHASE_PREPARE);
+					TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
+					game_context.attack_position += 1;
+					game_context.elapsed = 0.0f;
+				}
+			} else if (game_context.enemy_attack_position < game_context.enemy_attack_count) {
+				game_context.elapsed += delta;
+				if (game_context.elapsed >= 0.5f) {
+					EnemyAttackInfo *info = &enemy_attack_infos[game_context.enemy_attack_queue[game_context.enemy_attack_position]];
+					TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
+					game_add_damage(&game_context.player_health, info->damage);
+					game_context.enemy_attack_position += 1;
+					game_context.elapsed = 0.0f;
+				}
 			} else {
-				scene_set_scene(SCENE_ENDING);
+				game_set_phase(GAME_PHASE_CHECK);
 			}
-		} else {
-			game_set_phase(GAME_PHASE_PREPARE);
+		} break;
+		case GAME_PHASE_CHECK: {
+			if (game_context.player_health.value == 0) {
+				scene_set_scene(SCENE_GAME_OVER);
+			} else if (game_context.enemies[game_context.stage].health.value == 0) {
+				game_context.stage += 1;
+				if (game_context.stage < game_context.enemies_len) {
+					game_set_phase(GAME_PHASE_PREPARE);
+				} else {
+					scene_set_scene(SCENE_ENDING);
+				}
+			} else {
+				game_set_phase(GAME_PHASE_PREPARE);
+			}
+		} break;
 		}
-	} break;
 	}
 }
 
@@ -353,17 +366,22 @@ PUBLIC void gameplay_render(void) {
 			f32 start_y = 300.0f;
 
 			const char *text = attack_infos[game_context.attack_queue[i]].name;
-			Vector2 text_size = MeasureTextEx(GuiGetFont(), text, GuiGetFont().baseSize, 2.0f);
-			Rectangle text_rect = {
-				GetScreenWidth() / 2.0f - text_size.x / 2.0f,
-				start_y + text_size.y * i,
-				text_size.x,
-				text_size.y
-			};
-			GuiLabel(text_rect, text);
+			Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 2.0f);
+			DrawTextEx(
+				resources_pixel_operator_font,
+				text,
+				(Vector2){
+					GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+					start_y + text_size.y * i,
+				},
+				resources_pixel_operator_font.baseSize, 0.0f,
+				THEME_BLACK
+			);
 		}
 
-		ui_draw_space_confirm();
+		if (!paused) {
+			ui_draw_space_confirm(THEME_BLACK);
+		}
 
 		f32 input_time = game_context.input_time[game_context.input_time_position];
 		f32 time_bar_width = (input_time - game_context.elapsed) / input_time * GetScreenWidth();
@@ -375,5 +393,32 @@ PUBLIC void gameplay_render(void) {
 			THEME_BLACK
 		);
 	} break;
+	}
+
+	if (paused) {
+		ui_draw_pause_menu();
+	} else {
+		Rectangle esc_src_rect = { 272.0f, 128.0f, 16.0f, 16.0f };
+		Vector2 esc_size = { 32, 32 };
+		Rectangle esc_dst_rect = { GetScreenWidth() - esc_size.x - 5.0f, 5.0f, esc_size.x, esc_size.y };
+		DrawTexturePro(
+			resources_prompt_texture,
+			esc_src_rect,
+			esc_dst_rect,
+			Vector2Zero(), 0.0f,
+			THEME_BLACK
+		);
+		const char *pause_text = "Pause";
+		Vector2 pause_text_size = MeasureTextEx(resources_pixel_operator_font, pause_text, resources_pixel_operator_font.baseSize, 0.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			pause_text,
+			(Vector2){
+				GetScreenWidth() - pause_text_size.x - 7.0f,
+				esc_dst_rect.y + esc_dst_rect.height - 5.0f,
+			},
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
 	}
 }

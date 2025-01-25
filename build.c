@@ -10,13 +10,9 @@
 #include <raylib.h>
 #include <raymath.h>
 
-#define RAYGUI_IMPLEMENTATION
-#include <raygui.h>
-
 #include "types.h"
 
 #include "resources.c"
-#include "custom_style.h"
 #include "theme.c"
 #include "ui.c"
 
@@ -24,4 +20,6 @@
 #include "intro.c"
 #include "ending.c"
 #include "gameplay.c"
+#include "game_over.c"
+
 #include "main.c"

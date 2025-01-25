@@ -50,6 +50,8 @@ PUBLIC void intro_update(f32 delta) {
 		if (IsKeyPressed(KEY_SPACE)) {
 			PlaySound(resources_select_2_sound);
 			scene_set_scene(SCENE_GAMEPLAY);
+		} else if (IsKeyPressed(KEY_Q)) {
+			quit_flagged = true;
 		}
 	} break;
 	default: {
@@ -77,7 +79,36 @@ PUBLIC void intro_render(void) {
 
 	switch (intro_context.state) {
 	case INTRO_STATE_CONTINUE: {
-		ui_draw_space_confirm();
+		ui_draw_space_confirm(THEME_BLACK);
+
+		Rectangle q_src_rect = { 272.0f, 160.0f, 16.0f, 16.0f };
+		Vector2 q_size = { 32.0f, 32.0f };
+		Vector2 quit_position = { 50.0f, GetScreenHeight() - q_size.y - 30.0f };
+		Rectangle q_dst_rect = {
+			quit_position.x - q_size.x / 2.0f,
+			quit_position.y,
+			q_size.x,
+			q_size.y
+		};
+		DrawTexturePro(
+			resources_prompt_texture,
+			q_src_rect,
+			q_dst_rect,
+			Vector2Zero(), 0.0f,
+			THEME_BLACK
+		);
+		const char *quit_text = "Quit";
+		Vector2 quit_text_size = MeasureTextEx(resources_pixel_operator_font, quit_text, resources_pixel_operator_font.baseSize, 0.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			quit_text,
+			(Vector2){
+				quit_position.x - quit_text_size.x / 2.0f,
+				quit_position.y + q_size.y
+			},
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
 	} break;
 	default:
 		break;

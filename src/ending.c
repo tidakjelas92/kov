@@ -77,7 +77,7 @@ PUBLIC void ending_render(void) {
 
 	switch (ending_context.state) {
 	case ENDING_STATE_CONTINUE: {
-		ui_draw_space_confirm();
+		ui_draw_space_confirm(THEME_BLACK);
 	} break;
 	default:
 		break;

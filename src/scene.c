@@ -1,8 +1,13 @@
 #include "intro.h"
 #include "gameplay.h"
+#include "game_over.h"
 #include "ending.h"
 
-typedef enum Scene { SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_ENDING } Scene;
+GLOBAL b8 quit_flagged;
+
+typedef enum Scene {
+	SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_GAME_OVER, SCENE_ENDING
+} Scene;
 
 GLOBAL Scene scene_current;
 
@@ -25,6 +30,10 @@ PUBLIC void scene_set_scene(Scene scene) {
 		TraceLog(LOG_INFO, "enter gameplay.");
 		gameplay_init();
 	} break;
+	case SCENE_GAME_OVER: {
+		TraceLog(LOG_INFO, "enter game over.");
+		game_over_init();
+	} break;
 	case SCENE_ENDING: {
 		TraceLog(LOG_INFO, "enter ending.");
 		ending_init();
@@ -45,6 +54,9 @@ PUBLIC void scene_update(f32 delta) {
 	case SCENE_GAMEPLAY: {
 		gameplay_update(delta);
 	} break;
+	case SCENE_GAME_OVER: {
+		game_over_update(delta);
+	} break;
 	case SCENE_ENDING: {
 		ending_update(delta);
 	} break;
@@ -60,6 +72,9 @@ PUBLIC void scene_render(void) {
 	} break;
 	case SCENE_GAMEPLAY: {
 		gameplay_render();
+	} break;
+	case SCENE_GAME_OVER: {
+		game_over_render();
 	} break;
 	case SCENE_ENDING: {
 		ending_render();
