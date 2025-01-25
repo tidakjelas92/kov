@@ -30,9 +30,6 @@ typedef struct GameContext {
 	Sequence active_sequence;
 
 	Enemy *enemies;
-	u64 enemies_len;
-
-	u64 stage;
 
 	f32 elapsed;
 	Health player_health;
@@ -44,6 +41,9 @@ typedef struct GameContext {
 	u8 attack_position;
 	u8 enemy_attack_count;
 	u8 enemy_attack_position;
+
+	u8 enemies_len;
+	u8 stage;
 } GameContext;
 
 GLOBAL GameContext game_context;
@@ -272,7 +272,7 @@ PUBLIC void training_update(f32 delta) {
 
 PUBLIC void training_render(void) {
 	char stage_text[6];
-	snprintf(stage_text, sizeof(stage_text),"%zu/%zu", game_context.stage, game_context.enemies_len);
+	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.enemies_len);
 	Vector2 stage_text_size = MeasureTextEx(resources_pixelplay_font, stage_text, resources_pixelplay_font.baseSize * 3.0f, 4.0f);
 	DrawTextEx(
 		resources_pixelplay_font,
