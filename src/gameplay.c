@@ -24,7 +24,7 @@ typedef enum GameAttackPhaseStep {
 } GameAttackPhaseStep;
 
 typedef enum AttackType {
-	ATTACK_TYPE_NORMAL,
+	ATTACK_TYPE_SINGLE,
 	ATTACK_TYPE_AOE,
 	ATTACK_TYPE_SPLASH
 } AttackType;
@@ -76,9 +76,9 @@ typedef struct AttackInfo {
 } AttackInfo;
 
 GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_NORMAL, 0 },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_NORMAL, 5 },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_NORMAL, 12 },
+	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 0 },
+	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 5 },
+	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_SINGLE, 12 },
 	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
 	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
 };
@@ -287,7 +287,7 @@ PUBLIC void game_attack_update(f32 delta) {
 			const AttackInfo *attack_info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
 
 			switch (attack_info->type) {
-			case ATTACK_TYPE_NORMAL: {
+			case ATTACK_TYPE_SINGLE: {
 				u8 idx = 0;
 				for (u32 i = 0; i < stage_info->enemies_len; i++) {
 					if (game_context.enemy_healths[i] > 0) {
