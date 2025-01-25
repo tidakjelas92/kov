@@ -29,10 +29,39 @@ typedef enum AttackType {
 	ATTACK_TYPE_SPLASH
 } AttackType;
 
+typedef enum StageType {
+	STAGE_TYPE_BATTLE,
+	STAGE_TYPE_GRIMOIRE
+} StageType;
+
 typedef struct StageInfo {
-	u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
-	u8 enemies_len;
+	StageType type;
+	union {
+		struct {
+			u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
+			u8 enemies_len;
+		} battle_data;
+		struct {
+			u8 attack_id;
+		} grimoire_data;
+	} data;
 } StageInfo;
+
+typedef struct AttackInfo {
+	const char *name;
+	Sequence sequence;
+	AttackType type;
+	u16 damage;
+} AttackInfo;
+
+GLOBAL const AttackInfo attack_infos[] = {
+	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 0 },
+	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 5 },
+	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_SINGLE, 12 },
+	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
+	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
+};
+#define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
 
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
@@ -41,6 +70,8 @@ typedef struct GameContext {
 	u16 *enemy_healths;
 	const f32 *input_times;
 	const StageInfo *stage_infos;
+
+	u8 known_attacks[ATTACK_INFOS_COUNT];
 
 	f32 elapsed;
 	u16 player_health;
@@ -68,22 +99,6 @@ GLOBAL u8 gameplay_buffer[64];
 GLOBAL MemArena gameplay_arena;
 
 // TODO: separate game data to own file.
-typedef struct AttackInfo {
-	const char *name;
-	Sequence sequence;
-	AttackType type;
-	u16 damage;
-} AttackInfo;
-
-GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 0 },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 5 },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_SINGLE, 12 },
-	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
-	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
-};
-#define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
-
 typedef struct EnemyAttackInfo {
 	const char *name;
 	u16 damage;
@@ -112,10 +127,12 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
 GLOBAL const StageInfo gameplay_stage_infos[] = {
-	{{ 0, 0, 0, 0, 0 }, 1},
-	{{ 0, 1, 0, 0, 0 }, 3},
-	{{ 2, 0, 0, 0, 0 }, 1},
-	{{ 3, 3, 3, 3, 3 }, 5},
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 1, 0, 0, 0 }, 3 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 3, 3, 3 }, 5 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
@@ -126,8 +143,8 @@ GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 PRIVATE void game_prepare_enemies(GameContext *context) {
 	assert(context->enemy_healths != NULL);
 	const StageInfo *stage_info = &context->stage_infos[context->stage];
-	for (u32 i = 0; i < stage_info->enemies_len; i++) {
-		const EnemyInfo *enemy_info = &enemy_infos[stage_info->enemy_ids[i]];
+	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+		const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
 		context->enemy_healths[i] = enemy_info->health;
 	}
 }
@@ -178,6 +195,8 @@ PUBLIC void game_set_phase(GamePhase phase) {
 PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(attack_infos));
+	TraceLog(LOG_INFO, "sizeof StageInfo: %zu", sizeof(StageInfo));
+	TraceLog(LOG_INFO, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
 	mem_arena_init(&gameplay_arena, gameplay_buffer, sizeof(gameplay_buffer));
 
@@ -188,6 +207,8 @@ PUBLIC void gameplay_init(void) {
 	game_context.stage_infos = gameplay_stage_infos;
 	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
 	game_context.enemy_healths = (u16 *)mem_arena_alloc(&gameplay_arena, sizeof(u16) * MAX_ENEMIES_PER_STAGE);
+	game_context.known_attacks[0] = 1;
+	game_context.known_attacks[1] = 2;
 
 	paused = false;
 
@@ -289,7 +310,7 @@ PUBLIC void game_attack_update(f32 delta) {
 			switch (attack_info->type) {
 			case ATTACK_TYPE_SINGLE: {
 				u8 idx = 0;
-				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 					if (game_context.enemy_healths[i] > 0) {
 						idx = i;
 						break;
@@ -303,7 +324,7 @@ PUBLIC void game_attack_update(f32 delta) {
 				}
 			} break;
 			case ATTACK_TYPE_AOE: {
-				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 					if (game_context.enemy_healths[i] >= attack_info->damage) {
 						game_context.enemy_healths[i] -= attack_info->damage;
 					} else {
@@ -313,7 +334,7 @@ PUBLIC void game_attack_update(f32 delta) {
 			} break;
 			case ATTACK_TYPE_SPLASH: {
 				u16 applied = 0;
-				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 					if (game_context.enemy_healths[i] > 0) {
 						u16 remainder = attack_info->damage - applied;
 						if (game_context.enemy_healths[i] >= remainder) {
@@ -343,12 +364,12 @@ PUBLIC void game_attack_update(f32 delta) {
 	case GAME_ATTACK_PHASE_STEP_ENEMY: {
 		game_context.elapsed += delta;
 		if (game_context.elapsed >= 0.5f) {
-			while (game_context.enemy_healths[game_context.enemy_attack_position] == 0 && game_context.enemy_attack_position + 1 < stage_info->enemies_len) {
+			while (game_context.enemy_healths[game_context.enemy_attack_position] == 0 && game_context.enemy_attack_position + 1 < stage_info->data.battle_data.enemies_len) {
 				game_context.enemy_attack_position += 1;
 			}
 
 			if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
-				u8 enemy_id = stage_info->enemy_ids[game_context.enemy_attack_position];
+				u8 enemy_id = stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position];
 				const EnemyInfo *enemy_info = &enemy_infos[enemy_id];
 				const EnemyAttackInfo *info = &enemy_attack_infos[enemy_infos[enemy_id].attack_id];
 				TraceLog(LOG_INFO, "(%d) %s: %s - %u", game_context.enemy_attack_position, enemy_info->name, info->name, info->damage);
@@ -362,7 +383,7 @@ PUBLIC void game_attack_update(f32 delta) {
 
 			game_context.enemy_attack_position += 1;
 			game_context.elapsed = 0.0f;
-			if (game_context.enemy_attack_position >= stage_info->enemies_len) {
+			if (game_context.enemy_attack_position >= stage_info->data.battle_data.enemies_len) {
 				game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_DONE;
 			}
 		}
@@ -381,7 +402,7 @@ PRIVATE void game_check_update(GameContext *context) {
 	} else {
 		const StageInfo *stage_info = &context->stage_infos[context->stage];
 		b8 done = true;
-		for (u32 i = 0; i < stage_info->enemies_len; i++) {
+		for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 			if (context->enemy_healths[i] > 0) {
 				done = false;
 			}
@@ -458,12 +479,12 @@ PUBLIC void gameplay_render(void) {
 
 	const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
 	Vector2 bars_start_position = { GetScreenWidth() / 2.0f + 300.0f, 250.0f };
-	for (u32 i = 0; i < stage_info->enemies_len; i++) {
+	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 		bars_start_position.y += 25.0f;
 		ui_draw_health_bar(
 			bars_start_position,
 			160,
-			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->enemy_ids[i]].health
+			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
 		);
 	}
 
