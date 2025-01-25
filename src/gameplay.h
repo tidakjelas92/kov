@@ -4,5 +4,6 @@
 PUBLIC void gameplay_init(void);
 PUBLIC void gameplay_update(f32 delta);
 PUBLIC void gameplay_render(void);
+PUBLIC void gameplay_exit(void);
 
 #endif

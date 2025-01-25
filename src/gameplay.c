@@ -1,5 +1,6 @@
 #define MAX_INPUT_PER_SEQUENCE 8
 #define MAX_ATTACK_PER_TURN 32
+#define MAX_ENEMIES_PER_STAGE 5
 
 typedef struct Sequence {
 	u8 buffer[MAX_INPUT_PER_SEQUENCE];
@@ -10,26 +11,27 @@ typedef struct Health {
 	u16 value;
 } Health;
 
-typedef struct Enemy {
-	Health health;
-	// per turn, does this attack
-	u8 attack_id;
-} Enemy;
-
 typedef enum GamePhase {
+	GAME_PHASE_START,
 	GAME_PHASE_PREPARE,
 	GAME_PHASE_INPUT,
 	GAME_PHASE_ATTACK,
 	GAME_PHASE_CHECK
 } GamePhase;
 
+typedef struct StageInfo {
+	u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
+	u8 enemies_len;
+} StageInfo;
+
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
 	Sequence active_sequence;
 	u8 enemy_attack_queue[8];
 
-	Enemy *enemies;
+	u16 *enemy_healths;
 	f32 *input_times;
+	StageInfo *stage_infos;
 
 	f32 elapsed;
 	Health player_health;
@@ -41,16 +43,22 @@ typedef struct GameContext {
 	u8 active_position;
 	u8 attack_count;
 	u8 attack_position;
-	u8 enemy_attack_count;
+	// u8 enemy_attack_count;
 	u8 enemy_attack_position;
 
-	u8 enemies_len;
+	u8 stage_infos_len;
 	u8 stage;
 } GameContext;
 
+// TODO: allocate context with gameplay arena.
 GLOBAL GameContext game_context;
 GLOBAL b8 paused;
 
+// TODO: allocate from main with stack allocator.
+GLOBAL u8 gameplay_buffer[64];
+GLOBAL MemArena gameplay_arena;
+
+// TODO: separate game data to own file.
 typedef struct AttackInfo {
 	const char *name;
 	Sequence sequence;
@@ -79,16 +87,38 @@ GLOBAL EnemyAttackInfo enemy_attack_infos[] = {
 };
 #define ENEMY_ATTACK_INFOS_COUNT sizeof(enemy_attack_infos) / sizeof(EnemyAttackInfo)
 
-GLOBAL Enemy gameplay_enemies[] = {
-	{ { 10, 10 }, 0 },
-	{ { 15, 15 }, 0 },
-	{ { 30, 30 }, 1 }
+typedef struct EnemyInfo {
+	const char *name;
+	u16 health;
+	u8 attack_id;
+} EnemyInfo;
+
+GLOBAL EnemyInfo enemy_infos[] = {
+	{ "Training Dummy 1", 10, 0 },
+	{ "Training Dummy 2", 15, 0 },
+	{ "Instructor", 30, 1 }
 };
-#define GAMEPLAY_ENEMIES_LEN sizeof(gameplay_enemies) / sizeof(Enemy)
+#define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
+
+GLOBAL StageInfo gameplay_stage_infos[] = {
+	{{ 0, 0, 0, 0, 0 }, 1},
+	{{ 1, 0, 0, 0, 0 }, 1},
+	{{ 2, 0, 0, 0, 0 }, 1}
+};
+#define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
 GLOBAL f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 #define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
 
+
+PRIVATE void game_prepare_enemies(GameContext *context) {
+	assert(context->enemy_healths != NULL);
+	StageInfo *stage_info = &context->stage_infos[context->stage];
+	for (u32 i = 0; i < stage_info->enemies_len; i++) {
+		EnemyInfo *enemy_info = &enemy_infos[stage_info->enemy_ids[i]];
+		context->enemy_healths[i] = enemy_info->health;
+	}
+}
 
 PUBLIC void game_set_phase(GamePhase phase) {
 	if (game_context.phase == phase) {
@@ -98,10 +128,13 @@ PUBLIC void game_set_phase(GamePhase phase) {
 
 	// on exit
 	switch (game_context.phase) {
+	case GAME_PHASE_START: {
+		game_prepare_enemies(&game_context);
+	} break;
 	case GAME_PHASE_INPUT: {
 		// TODO: queue up enemy attacks
-		game_context.enemy_attack_queue[0] = game_context.enemies[game_context.stage].attack_id;
-		game_context.enemy_attack_count = 1;
+		// game_context.enemy_attack_queue[0] = game_context.enemies[game_context.stage].attack_id;
+		// game_context.enemy_attack_count = 1;
 
 		// scroll through input_time
 		game_context.input_time_position += 1;
@@ -137,15 +170,24 @@ PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(attack_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
+	mem_arena_init(&gameplay_arena, gameplay_buffer, sizeof(gameplay_buffer));
+
 	memset(&game_context, 0, sizeof(GameContext));
 	game_context.input_times = gameplay_input_times;
 	game_context.input_times_len = GAMEPLAY_INPUT_TIMES_LEN;
 	game_context.player_health.max = 20;
 	game_context.player_health.value = 20;
-	game_context.enemies = gameplay_enemies;
-	game_context.enemies_len = GAMEPLAY_ENEMIES_LEN;
+	game_context.stage_infos = gameplay_stage_infos;
+	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
+	game_context.enemy_healths = (u16 *)mem_arena_alloc(&gameplay_arena, sizeof(u16) * MAX_ENEMIES_PER_STAGE);
 
 	paused = false;
+
+	game_set_phase(GAME_PHASE_PREPARE);
+}
+
+PUBLIC void gameplay_exit(void) {
+	gameplay_arena.used = 0;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -186,6 +228,133 @@ PRIVATE void game_add_damage(Health *health, u32 damage) {
 	}
 }
 
+PRIVATE void game_prepare_update(f32 delta) {
+	game_context.elapsed += delta;
+	if (game_context.elapsed >= 1.0f) {
+		game_set_phase(GAME_PHASE_INPUT);
+	}
+}
+
+PRIVATE void game_input_update(f32 delta) {
+	game_context.elapsed += delta;
+	if (game_context.elapsed >= game_context.input_times[game_context.input_time_position]) {
+		game_set_phase(GAME_PHASE_ATTACK);
+	} else {
+		if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
+			if (IsKeyPressed(KEY_W)) {
+				game_add_input(1);
+				PlaySound(resources_click_1_sound);
+			} else if (IsKeyPressed(KEY_D)) {
+				game_add_input(2);
+				PlaySound(resources_click_2_sound);
+			} else if (IsKeyPressed(KEY_S)) {
+				game_add_input(3);
+				PlaySound(resources_click_3_sound);
+			} else if (IsKeyPressed(KEY_A)) {
+				game_add_input(4);
+				PlaySound(resources_click_4_sound);
+			}
+		}
+
+		if (IsKeyPressed(KEY_SPACE)) {
+			u8 idx = 0;
+			if (sequence_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
+				if (idx == 0) {
+					PlaySound(resources_error_5_sound);
+				}
+			} else {
+				PlaySound(resources_error_5_sound);
+			}
+			game_context.attack_queue[game_context.attack_count] = idx;
+			game_context.attack_count += 1;
+
+			memset(&game_context.active_sequence, 0, sizeof(Sequence));
+			game_context.active_position = 0;
+		}
+	}
+}
+
+PUBLIC void game_attack_update(f32 delta) {
+	StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
+	if (game_context.attack_position < game_context.attack_count) {
+		game_context.elapsed += delta;
+		if (game_context.elapsed >= 0.5f) {
+			AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
+
+			// TODO: ATTACK TYPES: NORMAL, AOE, SPLASH
+			b8 found = false;
+			u8 idx = 0;
+			while (!found) {
+				for (u32 i = 0; i < stage_info->enemies_len; i++) {
+					if (game_context.enemy_healths[i] > 0) {
+						found = true;
+						idx = i;
+						break;
+					}
+				}
+				assert(false && "should not reach here");
+			}
+
+			if (game_context.enemy_healths[idx] >= info->damage) {
+				game_context.enemy_healths[idx] -= info->damage;
+			} else {
+				game_context.enemy_healths[idx] = 0;
+			}
+
+			TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
+			game_context.attack_position += 1;
+			game_context.elapsed = 0.0f;
+		}
+	} else if (game_context.enemy_attack_position < stage_info->enemies_len) {
+		game_context.elapsed += delta;
+		if (game_context.elapsed >= 0.5f) {
+			while (game_context.enemy_healths[game_context.enemy_attack_position] == 0) {
+				game_context.enemy_attack_position += 1;
+			}
+
+			EnemyAttackInfo *info = &enemy_attack_infos[stage_info->enemy_ids[game_context.enemy_attack_position]];
+			TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
+
+			if (game_context.player_health.value >= info->damage) {
+				game_context.player_health.value -= info->damage;
+			} else {
+				game_context.player_health.value = 0;
+			}
+
+			game_context.enemy_attack_position += 1;
+			game_context.elapsed = 0.0f;
+		}
+	} else {
+		game_set_phase(GAME_PHASE_CHECK);
+	}
+}
+
+PRIVATE void game_check_update(GameContext *context) {
+	if (context->player_health.value == 0) {
+		scene_set_scene(SCENE_GAME_OVER);
+	} else {
+		StageInfo *stage_info = context->stage_infos[context->stage];
+		b8 done = true;
+		for (u32 i = 0; i < stage_info->enemies_len; i++) {
+			if (context->enemy_healths[i] > 0) {
+				done = false;
+			}
+		}
+
+		if (done) {
+			context->stage += 1;
+			if (context->stage < context->stage_infos_len) {
+				game_prepare_enemies(context);
+				game_set_phase(GAME_PHASE_PREPARE);
+			} else {
+				scene_set_scene(SCENE_ENDING);
+			}
+		} else {
+			game_set_phase(GAME_PHASE_PREPARE);
+		}
+	}
+}
+
 PUBLIC void gameplay_update(f32 delta) {
 	if (IsKeyPressed(KEY_ESCAPE)) {
 		paused = !paused;
@@ -199,88 +368,16 @@ PUBLIC void gameplay_update(f32 delta) {
 	} else {
 		switch (game_context.phase) {
 		case GAME_PHASE_PREPARE: {
-			game_context.elapsed += delta;
-			if (game_context.elapsed >= 1.0f) {
-				game_set_phase(GAME_PHASE_INPUT);
-			}
+			game_prepare_update(delta);
 		} break;
 		case GAME_PHASE_INPUT: {
-			game_context.elapsed += delta;
-			if (game_context.elapsed >= game_context.input_times[game_context.input_time_position]) {
-				game_set_phase(GAME_PHASE_ATTACK);
-			} else {
-				if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
-					if (IsKeyPressed(KEY_W)) {
-						game_add_input(1);
-						PlaySound(resources_click_1_sound);
-					} else if (IsKeyPressed(KEY_D)) {
-						game_add_input(2);
-						PlaySound(resources_click_2_sound);
-					} else if (IsKeyPressed(KEY_S)) {
-						game_add_input(3);
-						PlaySound(resources_click_3_sound);
-					} else if (IsKeyPressed(KEY_A)) {
-						game_add_input(4);
-						PlaySound(resources_click_4_sound);
-					}
-				}
-
-				if (IsKeyPressed(KEY_SPACE)) {
-					u8 idx = 0;
-					if (sequence_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
-						if (idx == 0) {
-							PlaySound(resources_error_5_sound);
-						}
-					} else {
-						PlaySound(resources_error_5_sound);
-					}
-					game_context.attack_queue[game_context.attack_count] = idx;
-					game_context.attack_count += 1;
-
-					memset(&game_context.active_sequence, 0, sizeof(Sequence));
-					game_context.active_position = 0;
-				}
-			}
+			game_input_update(delta);
 		} break;
 		case GAME_PHASE_ATTACK: {
-			if (game_context.attack_position < game_context.attack_count) {
-				game_context.elapsed += delta;
-				if (game_context.elapsed >= 0.5f) {
-					AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
-
-					Enemy *enemy = &game_context.enemies[game_context.stage];
-					game_add_damage(&enemy->health, info->damage);
-
-					TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
-					game_context.attack_position += 1;
-					game_context.elapsed = 0.0f;
-				}
-			} else if (game_context.enemies[game_context.stage].health.value > 0 && game_context.enemy_attack_position < game_context.enemy_attack_count) {
-				game_context.elapsed += delta;
-				if (game_context.elapsed >= 0.5f) {
-					EnemyAttackInfo *info = &enemy_attack_infos[game_context.enemy_attack_queue[game_context.enemy_attack_position]];
-					TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
-					game_add_damage(&game_context.player_health, info->damage);
-					game_context.enemy_attack_position += 1;
-					game_context.elapsed = 0.0f;
-				}
-			} else {
-				game_set_phase(GAME_PHASE_CHECK);
-			}
+			game_attack_update(delta);
 		} break;
 		case GAME_PHASE_CHECK: {
-			if (game_context.player_health.value == 0) {
-				scene_set_scene(SCENE_GAME_OVER);
-			} else if (game_context.enemies[game_context.stage].health.value == 0) {
-				game_context.stage += 1;
-				if (game_context.stage < game_context.enemies_len) {
-					game_set_phase(GAME_PHASE_PREPARE);
-				} else {
-					scene_set_scene(SCENE_ENDING);
-				}
-			} else {
-				game_set_phase(GAME_PHASE_PREPARE);
-			}
+			game_check_update(&game_context);
 		} break;
 		}
 	}
@@ -288,7 +385,7 @@ PUBLIC void gameplay_update(f32 delta) {
 
 PUBLIC void gameplay_render(void) {
 	char stage_text[6];
-	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.enemies_len);
+	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.stage_infos_len);
 	Vector2 stage_text_size = MeasureTextEx(resources_pixelplay_font, stage_text, resources_pixelplay_font.baseSize * 3.0f, 4.0f);
 	DrawTextEx(
 		resources_pixelplay_font,
@@ -311,7 +408,9 @@ PUBLIC void gameplay_render(void) {
 		(f32)game_context.player_health.value / (f32)game_context.player_health.max
 	);
 
+	for (u32 i = 0; i < )
 	Enemy *enemy = &game_context.enemies[game_context.stage];
+	EnemyInfo *enemy_info = &game_context
 	ui_draw_health_bar(
 		(Vector2){ 600, 250 },
 		160,

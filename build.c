@@ -11,6 +11,7 @@
 #include <raymath.h>
 
 #include "types.h"
+#include "mem.c"
 
 #include "resources.c"
 #include "theme.c"
