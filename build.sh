@@ -59,7 +59,7 @@ if [ -v main ]; then
 
 	mkdir -p out
 	echo "info: used flags $cflags $LFLAGS $IFLAGS"
-	$CC build.c $cflags $LFLAGS $IFLAGS -o out/main
+	$CC build.c $cflags $LFLAGS $IFLAGS -o out/kov
 	if [ $? -eq 0 ]; then
 		echo "info: main target built successfully."
 		rsync -r assets out
