@@ -320,7 +320,7 @@ PUBLIC void game_attack_update(f32 delta) {
 							applied += remainder;
 							game_context.enemy_healths[i] -= remainder;
 						} else {
-							applied += remainder - game_context.enemy_healths[i];
+							applied += game_context.enemy_healths[i];
 							game_context.enemy_healths[i] = 0;
 						}
 
