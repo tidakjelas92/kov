@@ -25,18 +25,20 @@ typedef enum GamePhase {
 
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
-	f32 input_time[4];
 	Sequence active_sequence;
 	u8 enemy_attack_queue[8];
 
 	Enemy *enemies;
+	f32 *input_times;
 
 	f32 elapsed;
 	Health player_health;
 	GamePhase phase;
 
-	u8 active_position;
 	u8 input_time_position;
+	u8 input_times_len;
+
+	u8 active_position;
 	u8 attack_count;
 	u8 attack_position;
 	u8 enemy_attack_count;
@@ -84,6 +86,9 @@ GLOBAL Enemy gameplay_enemies[] = {
 };
 #define GAMEPLAY_ENEMIES_LEN sizeof(gameplay_enemies) / sizeof(Enemy)
 
+GLOBAL f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
+#define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
+
 
 PUBLIC void game_set_phase(GamePhase phase) {
 	if (game_context.phase == phase) {
@@ -100,7 +105,7 @@ PUBLIC void game_set_phase(GamePhase phase) {
 
 		// scroll through input_time
 		game_context.input_time_position += 1;
-		if (game_context.input_time_position >= sizeof(game_context.input_time) / sizeof(f32)) {
+		if (game_context.input_time_position >= game_context.input_times_len) {
 			game_context.input_time_position = 0;
 		}
 	} break;
@@ -133,10 +138,8 @@ PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(attack_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
 	memset(&game_context, 0, sizeof(GameContext));
-	game_context.input_time[0] = 4.0f;
-	game_context.input_time[1] = 3.5f;
-	game_context.input_time[2] = 1.5f;
-	game_context.input_time[3] = 2.5f;
+	game_context.input_times = gameplay_input_times;
+	game_context.input_times_len = GAMEPLAY_INPUT_TIMES_LEN;
 	game_context.player_health.max = 20;
 	game_context.player_health.value = 20;
 	game_context.enemies = gameplay_enemies;
@@ -203,7 +206,7 @@ PUBLIC void gameplay_update(f32 delta) {
 		} break;
 		case GAME_PHASE_INPUT: {
 			game_context.elapsed += delta;
-			if (game_context.elapsed >= game_context.input_time[game_context.input_time_position]) {
+			if (game_context.elapsed >= game_context.input_times[game_context.input_time_position]) {
 				game_set_phase(GAME_PHASE_ATTACK);
 			} else {
 				if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
@@ -383,7 +386,7 @@ PUBLIC void gameplay_render(void) {
 			ui_draw_space_confirm(THEME_BLACK);
 		}
 
-		f32 input_time = game_context.input_time[game_context.input_time_position];
+		f32 input_time = game_context.input_times[game_context.input_time_position];
 		f32 time_bar_width = (input_time - game_context.elapsed) / input_time * GetScreenWidth();
 		DrawRectangle(
 			GetScreenWidth() / 2.0f - time_bar_width / 2.0f,
