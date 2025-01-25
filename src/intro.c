@@ -49,7 +49,7 @@ PUBLIC void intro_update(f32 delta) {
 	case INTRO_STATE_CONTINUE: {
 		if (IsKeyPressed(KEY_SPACE)) {
 			PlaySound(resources_select_2_sound);
-			scene_set_scene(SCENE_TRAINING);
+			scene_set_scene(SCENE_GAMEPLAY);
 		}
 	} break;
 	default: {

@@ -23,5 +23,5 @@
 #include "scene.c"
 #include "intro.c"
 #include "ending.c"
-#include "training.c"
+#include "gameplay.c"
 #include "main.c"

@@ -25,9 +25,9 @@ typedef enum GamePhase {
 
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
-	u8 enemy_attack_queue[8];
 	f32 input_time[4];
 	Sequence active_sequence;
+	u8 enemy_attack_queue[8];
 
 	Enemy *enemies;
 
@@ -76,12 +76,12 @@ GLOBAL EnemyAttackInfo enemy_attack_infos[] = {
 };
 #define ENEMY_ATTACK_INFOS_COUNT sizeof(enemy_attack_infos) / sizeof(EnemyAttackInfo)
 
-GLOBAL Enemy training_enemies[] = {
+GLOBAL Enemy gameplay_enemies[] = {
 	{ { 10, 10 }, 0 },
 	{ { 15, 15 }, 0 },
 	{ { 30, 30 }, 1 }
 };
-#define TRAINING_ENEMIES_LEN sizeof(training_enemies) / sizeof(Enemy)
+#define GAMEPLAY_ENEMIES_LEN sizeof(gameplay_enemies) / sizeof(Enemy)
 
 
 PUBLIC void game_set_phase(GamePhase phase) {
@@ -127,7 +127,7 @@ PUBLIC void game_set_phase(GamePhase phase) {
 	}
 }
 
-PUBLIC void training_init(void) {
+PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(attack_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
@@ -138,8 +138,8 @@ PUBLIC void training_init(void) {
 	game_context.input_time[3] = 2.5f;
 	game_context.player_health.max = 20;
 	game_context.player_health.value = 20;
-	game_context.enemies = training_enemies;
-	game_context.enemies_len = TRAINING_ENEMIES_LEN;
+	game_context.enemies = gameplay_enemies;
+	game_context.enemies_len = GAMEPLAY_ENEMIES_LEN;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -180,7 +180,7 @@ PRIVATE void game_add_damage(Health *health, u32 damage) {
 	}
 }
 
-PUBLIC void training_update(f32 delta) {
+PUBLIC void gameplay_update(f32 delta) {
 	switch (game_context.phase) {
 	case GAME_PHASE_PREPARE: {
 		game_context.elapsed += delta;
@@ -270,7 +270,7 @@ PUBLIC void training_update(f32 delta) {
 	}
 }
 
-PUBLIC void training_render(void) {
+PUBLIC void gameplay_render(void) {
 	char stage_text[6];
 	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.enemies_len);
 	Vector2 stage_text_size = MeasureTextEx(resources_pixelplay_font, stage_text, resources_pixelplay_font.baseSize * 3.0f, 4.0f);

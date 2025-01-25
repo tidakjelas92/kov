@@ -1,8 +1,8 @@
 #include "intro.h"
-#include "training.h"
+#include "gameplay.h"
 #include "ending.h"
 
-typedef enum Scene { SCENE_START, SCENE_INTRO, SCENE_TRAINING, SCENE_GAMEPLAY, SCENE_ENDING } Scene;
+typedef enum Scene { SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_ENDING } Scene;
 
 GLOBAL Scene scene_current;
 
@@ -21,12 +21,9 @@ PUBLIC void scene_set_scene(Scene scene) {
 		TraceLog(LOG_INFO, "enter intro.");
 		intro_init();
 	} break;
-	case SCENE_TRAINING: {
-		TraceLog(LOG_INFO, "enter training.");
-		training_init();
-	} break;
 	case SCENE_GAMEPLAY: {
 		TraceLog(LOG_INFO, "enter gameplay.");
+		gameplay_init();
 	} break;
 	case SCENE_ENDING: {
 		TraceLog(LOG_INFO, "enter ending.");
@@ -45,8 +42,8 @@ PUBLIC void scene_update(f32 delta) {
 	case SCENE_INTRO: {
 		intro_update(delta);
 	} break;
-	case SCENE_TRAINING: {
-		training_update(delta);
+	case SCENE_GAMEPLAY: {
+		gameplay_update(delta);
 	} break;
 	case SCENE_ENDING: {
 		ending_update(delta);
@@ -61,8 +58,8 @@ PUBLIC void scene_render(void) {
 	case SCENE_INTRO: {
 		intro_render();
 	} break;
-	case SCENE_TRAINING: {
-		training_render();
+	case SCENE_GAMEPLAY: {
+		gameplay_render();
 	} break;
 	case SCENE_ENDING: {
 		ending_render();
