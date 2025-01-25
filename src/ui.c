@@ -87,31 +87,6 @@ PUBLIC void ui_draw_pause_menu(void) {
 	);
 }
 
-PUBLIC void ui_draw_esc_pause(void) {
-	Rectangle esc_src_rect = { 272.0f, 128.0f, 16.0f, 16.0f };
-	Vector2 esc_size = { 32, 32 };
-	Rectangle esc_dst_rect = { GetScreenWidth() - esc_size.x - 5.0f, 5.0f, esc_size.x, esc_size.y };
-	DrawTexturePro(
-		resources_prompt_texture,
-		esc_src_rect,
-		esc_dst_rect,
-		Vector2Zero(), 0.0f,
-		THEME_BLACK
-	);
-	const char *pause_text = "Pause";
-	Vector2 pause_text_size = MeasureTextEx(resources_pixel_operator_font, pause_text, resources_pixel_operator_font.baseSize, 0.0f);
-	DrawTextEx(
-		resources_pixel_operator_font,
-		pause_text,
-		(Vector2){
-			GetScreenWidth() - pause_text_size.x - 7.0f,
-			esc_dst_rect.y + esc_dst_rect.height - 5.0f,
-		},
-		resources_pixel_operator_font.baseSize, 0.0f,
-		THEME_BLACK
-	);
-}
-
 PUBLIC void ui_draw_space_confirm(Color color) {
 	Rectangle space_src_rect = { 496.0f, 224.0f, 48.0f, 16.0f };
 	Vector2 space_dst_size = { 96.0f, 32.0f };
