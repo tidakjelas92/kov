@@ -252,7 +252,7 @@ PUBLIC void gameplay_update(f32 delta) {
 					game_context.attack_position += 1;
 					game_context.elapsed = 0.0f;
 				}
-			} else if (game_context.enemy_attack_position < game_context.enemy_attack_count) {
+			} else if (game_context.enemies[game_context.stage].health.value > 0 && game_context.enemy_attack_position < game_context.enemy_attack_count) {
 				game_context.elapsed += delta;
 				if (game_context.elapsed >= 0.5f) {
 					EnemyAttackInfo *info = &enemy_attack_infos[game_context.enemy_attack_queue[game_context.enemy_attack_position]];
