@@ -31,16 +31,18 @@ PUBLIC void scene_set_scene(Scene scene) {
 	// on enter
 	switch (scene_current) {
 	case SCENE_INTRO: {
+		TraceLog(LOG_INFO, "enter intro.");
 		intro_init();
 	} break;
 	case SCENE_TRAINING: {
+		TraceLog(LOG_INFO, "enter training.");
 		training_init();
 	} break;
 	case SCENE_GAMEPLAY: {
-
+		TraceLog(LOG_INFO, "enter gameplay.");
 	} break;
 	case SCENE_ENDING: {
-
+		TraceLog(LOG_INFO, "enter ending.");
 	} break;
 	default: {
 	} break;

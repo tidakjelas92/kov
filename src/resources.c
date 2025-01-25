@@ -1,6 +1,7 @@
 // global resources
 
 GLOBAL Texture resources_prompt_texture;
+GLOBAL Texture resources_rpg_texture;
 GLOBAL Font resources_pixelplay_font;
 GLOBAL Sound resources_select_2_sound;
 GLOBAL Sound resources_error_1_sound;
@@ -14,6 +15,7 @@ GLOBAL Sound resources_click_4_sound;
 
 PUBLIC void resources_init(void) {
 	resources_prompt_texture = LoadTexture("assets/sprites/tilemap_white_packed.png");
+  resources_rpg_texture = LoadTexture("assets/sprites/tilemap_packed.png");
 	resources_pixelplay_font = LoadFont("assets/fonts/pixelplay.png");
 	resources_select_2_sound = LoadSound("assets/sfx/select_002.ogg");
 	resources_error_1_sound = LoadSound("assets/sfx/error_001.ogg");

@@ -5,6 +5,11 @@ typedef struct Sequence {
 	u8 buffer[MAX_INPUT_PER_SEQUENCE];
 } Sequence;
 
+typedef struct Character {
+	u16 max_health;
+	u16 health;
+} Character;
+
 typedef enum GamePhase {
 	GAME_PHASE_PREPARE,
 	GAME_PHASE_INPUT,
@@ -17,6 +22,8 @@ typedef struct GameContext {
 	f32 input_time[4];
 	Sequence active_sequence;
 	f32 elapsed;
+	Character player_character;
+	Character enemy_character;
 	u8 active_position;
 	u8 input_time_position;
 	u8 attack_count;
@@ -87,6 +94,10 @@ PUBLIC void training_init(void) {
 	game_context.input_time[1] = 3.5f;
 	game_context.input_time[2] = 1.5f;
 	game_context.input_time[3] = 2.5f;
+	game_context.player_character.max_health = 20;
+	game_context.player_character.health = 20;
+	game_context.enemy_character.max_health = 20;
+	game_context.enemy_character.health = 20;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -117,6 +128,14 @@ PRIVATE b8 sequence_try_get_sequence_idx(const Sequence *seq, u8 *result) {
 PRIVATE void game_add_input(u8 input) {
 	game_context.active_sequence.buffer[game_context.active_position] = input;
 	game_context.active_position += 1;
+}
+
+PRIVATE void game_add_damage(Character *character, u32 damage) {
+	if (character->health >= damage) {
+		character->health -= damage;
+	} else {
+		character->health = 0;
+	}
 }
 
 PUBLIC void training_update(f32 delta) {
@@ -170,6 +189,9 @@ PUBLIC void training_update(f32 delta) {
 			game_context.elapsed += delta;
 			if (game_context.elapsed >= 0.5f) {
 				AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
+
+				game_add_damage(&game_context.enemy_character, info->damage);
+
 				TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
 				game_context.attack_position += 1;
 				game_context.elapsed = 0.0f;
@@ -180,12 +202,37 @@ PUBLIC void training_update(f32 delta) {
 	} break;
 	case GAME_PHASE_CHECK: {
 		// TODO: check if player lose or win
-		game_set_phase(GAME_PHASE_PREPARE);
+		if (game_context.player_character.health == 0) {
+			// TODO: lose
+		} else if (game_context.enemy_character.health == 0) {
+			scene_set_scene(SCENE_ENDING);
+		} else {
+			game_set_phase(GAME_PHASE_PREPARE);
+		}
 	} break;
 	}
 }
 
 PUBLIC void training_render(void) {
+	DrawTexturePro(
+		resources_rpg_texture,
+		(Rectangle){ 0, 112, 16, 16 },
+		(Rectangle){ GetScreenWidth() / 2.0f - 300.0f, 300.0f, 32.0f, 32.0f },
+		Vector2Zero(), 0.0f,
+		WHITE
+	);
+	ui_draw_health_bar(
+		(Vector2){ 100, 250 },
+		160,
+		(f32)game_context.player_character.health / (f32)game_context.player_character.max_health
+	);
+
+	ui_draw_health_bar(
+		(Vector2){ 600, 250 },
+		160,
+		(f32)game_context.enemy_character.health / (f32)game_context.enemy_character.max_health
+	);
+
 	switch (game_context.phase) {
 	case GAME_PHASE_PREPARE: {
 		const char *text = "Ready?";

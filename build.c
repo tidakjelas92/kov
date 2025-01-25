@@ -18,6 +18,8 @@
 #include "resources.c"
 #include "custom_style.h"
 #include "theme.c"
+#include "ui.c"
+
 #include "scene.c"
 #include "intro.c"
 #include "training.c"
