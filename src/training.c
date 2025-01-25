@@ -5,10 +5,10 @@ typedef struct Sequence {
 	u8 buffer[MAX_INPUT_PER_SEQUENCE];
 } Sequence;
 
-typedef struct Character {
-	u16 max_health;
-	u16 health;
-} Character;
+typedef struct Health {
+	u16 max;
+	u16 value;
+} Health;
 
 typedef enum GamePhase {
 	GAME_PHASE_PREPARE,
@@ -22,13 +22,13 @@ typedef struct GameContext {
 	f32 input_time[4];
 	Sequence active_sequence;
 	f32 elapsed;
-	Character player_character;
-	Character enemy_character;
+	Health player_health;
+	Health enemy_health;
+	GamePhase phase;
 	u8 active_position;
 	u8 input_time_position;
 	u8 attack_count;
 	u8 attack_position;
-	GamePhase phase;
 } GameContext;
 
 GLOBAL GameContext game_context;
@@ -94,10 +94,10 @@ PUBLIC void training_init(void) {
 	game_context.input_time[1] = 3.5f;
 	game_context.input_time[2] = 1.5f;
 	game_context.input_time[3] = 2.5f;
-	game_context.player_character.max_health = 20;
-	game_context.player_character.health = 20;
-	game_context.enemy_character.max_health = 20;
-	game_context.enemy_character.health = 20;
+	game_context.player_health.max = 20;
+	game_context.player_health.value = 20;
+	game_context.enemy_health.max = 20;
+	game_context.enemy_health.value = 20;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -130,11 +130,11 @@ PRIVATE void game_add_input(u8 input) {
 	game_context.active_position += 1;
 }
 
-PRIVATE void game_add_damage(Character *character, u32 damage) {
-	if (character->health >= damage) {
-		character->health -= damage;
+PRIVATE void game_add_damage(Health *health, u32 damage) {
+	if (health->value >= damage) {
+		health->value -= damage;
 	} else {
-		character->health = 0;
+		health->value = 0;
 	}
 }
 
@@ -190,7 +190,7 @@ PUBLIC void training_update(f32 delta) {
 			if (game_context.elapsed >= 0.5f) {
 				AttackInfo *info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
 
-				game_add_damage(&game_context.enemy_character, info->damage);
+				game_add_damage(&game_context.enemy_health, info->damage);
 
 				TraceLog(LOG_INFO, "%s - %u", info->name, info->damage);
 				game_context.attack_position += 1;
@@ -202,9 +202,9 @@ PUBLIC void training_update(f32 delta) {
 	} break;
 	case GAME_PHASE_CHECK: {
 		// TODO: check if player lose or win
-		if (game_context.player_character.health == 0) {
+		if (game_context.player_health.value == 0) {
 			// TODO: lose
-		} else if (game_context.enemy_character.health == 0) {
+		} else if (game_context.enemy_health.value == 0) {
 			scene_set_scene(SCENE_ENDING);
 		} else {
 			game_set_phase(GAME_PHASE_PREPARE);
@@ -224,13 +224,13 @@ PUBLIC void training_render(void) {
 	ui_draw_health_bar(
 		(Vector2){ 100, 250 },
 		160,
-		(f32)game_context.player_character.health / (f32)game_context.player_character.max_health
+		(f32)game_context.player_health.value / (f32)game_context.player_health.max
 	);
 
 	ui_draw_health_bar(
 		(Vector2){ 600, 250 },
 		160,
-		(f32)game_context.enemy_character.health / (f32)game_context.enemy_character.max_health
+		(f32)game_context.enemy_health.value / (f32)game_context.enemy_health.max
 	);
 
 	switch (game_context.phase) {
