@@ -14,6 +14,7 @@ git submodule update --init --recursive
 Requirements:
 - Visual Studio 2022 community (for build tools only)
 
+Steps:
 1. Can try to build raylib or just download the precompiled binaries from the releases section.
 2. Put `raylib.lib` in `vendor\raylib\src`.
 3. Run `build.bat`
@@ -23,6 +24,7 @@ Requirements:
 Requirements:
 - llvm
 
+Steps:
 1. `cd` to `vendor/raylib/src`
 2. `make`
 3. `cd` back to project root.
