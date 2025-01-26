@@ -401,6 +401,7 @@ PUBLIC void game_attack_update(f32 delta) {
 			TraceLog(LOG_INFO, "player %s - %u", attack_info->name, attack_info->damage);
 			game_context.attack_position += 1;
 			game_context.elapsed = 0.0f;
+			PlaySound(resources_error_5_sound);
 			if (game_context.attack_position >= game_context.attack_count) {
 				game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_ENEMY;
 			}
@@ -426,6 +427,7 @@ PUBLIC void game_attack_update(f32 delta) {
 				}
 			}
 
+			PlaySound(resources_error_5_sound);
 			game_context.enemy_attack_position += 1;
 			game_context.elapsed = 0.0f;
 			if (game_context.enemy_attack_position >= stage_info->data.battle_data.enemies_len) {
