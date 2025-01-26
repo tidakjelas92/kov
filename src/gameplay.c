@@ -136,19 +136,19 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
 GLOBAL const StageInfo gameplay_stage_infos[] = {
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 0 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 0, 0, 0, 0 }, 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 1, 0, 0, 0 }, 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 0, 0, 0 }, 2 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 3, 3, 3 }, 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 5, 0, 0 }, 3 } } },
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 6, 6, 6, 6, 6 }, 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 7, 0, 0, 0, 0 }, 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 8, 8, 0, 0, 0 }, 2 } } },
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 4 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 4, 4, 9 }, 5 } } },
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
@@ -242,6 +242,19 @@ PUBLIC void gameplay_init(void) {
 	paused = false;
 
 	game_transition_stage_type(&game_context);
+}
+
+PRIVATE u8 sequence_get_len(const Sequence *s) {
+	u8 len = 0;
+	for (u32 i = 0; i < MAX_INPUT_PER_SEQUENCE; i++) {
+		if (s->buffer[i] == 0) {
+			break;
+		} else {
+			len += 1;
+		}
+	}
+
+	return len;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -496,6 +509,20 @@ PUBLIC void gameplay_update(f32 delta) {
 	}
 }
 
+PRIVATE const char *get_attack_type_string(AttackType type) {
+	switch (type) {
+	case ATTACK_TYPE_SINGLE: {
+		return "Single";
+	} break;
+	case ATTACK_TYPE_AOE: {
+		return "AoE";
+	} break;
+	case ATTACK_TYPE_SPLASH: {
+		return "Splash";
+	} break;
+	}
+}
+
 PUBLIC void gameplay_render(void) {
 	char stage_text[6];
 	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.stage_infos_len);
@@ -612,6 +639,86 @@ PUBLIC void gameplay_render(void) {
 	} break;
 	default: {
 	} break;
+	}
+
+	if (game_context.phase == GAME_PHASE_GRIMOIRE_WAIT || game_context.phase == GAME_PHASE_GRIMOIRE_CONTINUE) {
+		Vector2 panel_size = { 450, 300 };
+		Rectangle panel_rect = {
+			GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
+			GetScreenHeight() / 2.0f - panel_size.y / 2.0f,
+			panel_size.x,
+			panel_size.y
+		};
+		DrawRectangleRec(panel_rect, THEME_BLACK);
+
+		Vector2 grim_size = { 80, 80 };
+		Rectangle grim_dst_rect = {
+			panel_rect.x + panel_rect.width / 2.0f - grim_size.x / 2.0f,
+			panel_rect.y + 50.0f,
+			grim_size.x,
+			grim_size.y
+		};
+		DrawTexturePro(
+			resources_onebit_texture,
+			onebit_tiles[ONEBIT_TILE_GRIMOIRE],
+			grim_dst_rect,
+			Vector2Zero(), 0.0f,
+			THEME_WHITE
+		);
+		const char *text = "Grimoire Found!";
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+		Vector2 text_position = {
+			GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+			grim_dst_rect.y + grim_dst_rect.height,
+		};
+		DrawTextEx(
+			resources_pixel_operator_font,
+			text,
+			text_position,
+			resources_pixel_operator_font.baseSize * 3.0f, 2.0f,
+			THEME_WHITE
+		);
+
+		const AttackInfo *attack_info = &attack_infos[stage_info->data.grimoire_data.attack_id];
+		char name_text[24] = { 0 };
+		snprintf(name_text, sizeof(name_text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
+		Vector2 name_text_size = MeasureTextEx(resources_pixel_operator_font, name_text, resources_pixel_operator_font.baseSize * 2.0f, 2.0f);
+		Vector2 name_text_position = {
+			GetScreenWidth() / 2.0f - name_text_size.x / 2.0f,
+			text_position.y + text_size.y,
+		};
+		DrawTextEx(
+			resources_pixel_operator_font,
+			name_text,
+			name_text_position,
+			resources_pixel_operator_font.baseSize * 2.0f, 2.0f,
+			THEME_WHITE
+		);
+
+		const Sequence *sequence = &attack_info->sequence;
+		u8 sequence_len = sequence_get_len(sequence);
+		Vector2 arrow_dst_size = { 48.0f, 48.0f };
+		Vector2 sequence_start_position = {
+			GetScreenWidth() / 2.0f - arrow_dst_size.x * sequence_len / 2.0f,
+			name_text_position.y + name_text_size.y
+		};
+
+		for (u32 i = 0; i < sequence_len; i++) {
+			Rectangle arrow_dst_rect = {
+				sequence_start_position.x + arrow_dst_size.x * i,
+				sequence_start_position.y,
+				arrow_dst_size.x,
+				arrow_dst_size.y
+			};
+			DrawTexturePro(
+				resources_prompt_texture,
+				// basically works because the value is literally the same.
+				prompt_tiles[sequence->buffer[i] - 1],
+				arrow_dst_rect,
+				Vector2Zero(), 0.0f,
+				THEME_WHITE
+			);
+		}
 	}
 
 	if (paused) {

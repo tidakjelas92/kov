@@ -57,8 +57,10 @@ GLOBAL const Rectangle prompt_tiles[] = {
 
 typedef enum OnebitTile {
 	ONEBIT_TILE_PLAYER,
+	ONEBIT_TILE_GRIMOIRE,
 } OnebitTile;
 
 GLOBAL const Rectangle onebit_tiles[] = {
 	{ 432, 0, 16, 16 },
+	{ 528, 240, 16, 16 },
 };

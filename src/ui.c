@@ -94,6 +94,11 @@ PUBLIC void ui_draw_space_confirm(Color color) {
 		space_dst_size.x,
 		space_dst_size.y
 	};
+
+	if (IsKeyDown(KEY_SPACE)) {
+		space_dst_rect.y += 4.0f;
+	}
+
 	DrawTexturePro(
 		resources_prompt_texture,
 		prompt_tiles[PROMPT_TILE_SPACE],
