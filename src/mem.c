@@ -48,7 +48,7 @@ PUBLIC void *mem_arena_alloc_align(MemArena *a, u64 size, u64 align) {
 		return NULL;
 	}
 
-	void *ptr = &a->buffer[used];
+	void *ptr = (void *)((u8 *)a->buffer + used);
 	a->used = used + size;
 
 	return ptr;
