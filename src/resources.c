@@ -33,3 +33,24 @@ PUBLIC void resources_init(void) {
 PUBLIC void resources_unload(void) {
 	UnloadFont(resources_pixelplay_font);
 }
+
+typedef enum PromptTile {
+	PROMPT_TILE_ARROW_UP,
+	PROMPT_TILE_ARROW_RIGHT,
+	PROMPT_TILE_ARROW_DOWN,
+	PROMPT_TILE_ARROW_LEFT,
+	PROMPT_TILE_SPACE,
+	PROMPT_TILE_ESCAPE,
+	PROMPT_TILE_Q
+} PromptTile;
+
+// access with PromptTile as index
+GLOBAL const Rectangle prompt_tiles[] = {
+	{ 480, 192, 16, 16 },
+	{ 496, 192, 16, 16 },
+	{ 512, 192, 16, 16 },
+	{ 528, 192, 16, 16 },
+	{ 496, 224, 48, 16 },
+	{ 272, 128, 16, 16 },
+	{ 272, 160, 16, 16 }
+};

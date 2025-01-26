@@ -3,6 +3,7 @@
 #define MAX_ENEMIES_PER_STAGE 5
 #define MAX_PLAYER_HEALTH 20
 
+// 0: up, 1: right, 2: down, 3: left
 typedef struct Sequence {
 	u8 buffer[MAX_INPUT_PER_SEQUENCE];
 } Sequence;
@@ -531,12 +532,6 @@ PUBLIC void gameplay_render(void) {
 		);
 	} break;
 	case GAME_PHASE_INPUT: {
-		Rectangle arrow_rects[] = {
-			{ 480, 192, 16, 16 },
-			{ 496, 192, 16, 16 },
-			{ 512, 192, 16, 16 },
-			{ 528, 192, 16, 16 },
-		};
 		Vector2 arrow_dst_size = { 48.0f, 48.0f };
 		Vector2 start_position = {
 			GetScreenWidth() / 2.0f - arrow_dst_size.x * game_context.active_position / 2.0f,
@@ -552,7 +547,8 @@ PUBLIC void gameplay_render(void) {
 			};
 			DrawTexturePro(
 				resources_prompt_texture,
-				arrow_rects[game_context.active_sequence.buffer[i] - 1],
+				// basically works because the value is literally the same.
+				prompt_tiles[game_context.active_sequence.buffer[i] - 1],
 				arrow_dst_rect,
 				Vector2Zero(), 0.0f,
 				THEME_BLACK
@@ -602,12 +598,11 @@ PUBLIC void gameplay_render(void) {
 	if (paused) {
 		ui_draw_pause_menu();
 	} else {
-		Rectangle esc_src_rect = { 272.0f, 128.0f, 16.0f, 16.0f };
 		Vector2 esc_size = { 32, 32 };
 		Rectangle esc_dst_rect = { GetScreenWidth() - esc_size.x - 5.0f, 5.0f, esc_size.x, esc_size.y };
 		DrawTexturePro(
 			resources_prompt_texture,
-			esc_src_rect,
+			prompt_tiles[PROMPT_TILE_ESCAPE],
 			esc_dst_rect,
 			Vector2Zero(), 0.0f,
 			THEME_BLACK

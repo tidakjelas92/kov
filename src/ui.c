@@ -27,7 +27,6 @@ PUBLIC void ui_draw_pause_menu(void) {
 		GetScreenWidth() / 2.0f - 50.0f,
 		GetScreenHeight() / 2.0f
 	};
-	Rectangle esc_src_rect = { 272.0f, 128.0f, 16.0f, 16.0f };
 	Vector2 esc_size = { 32.0f, 32.0f };
 	Rectangle esc_dst_rect = {
 		resume_position.x - esc_size.x / 2.0f,
@@ -36,7 +35,7 @@ PUBLIC void ui_draw_pause_menu(void) {
 	};
 	DrawTexturePro(
 		resources_prompt_texture,
-		esc_src_rect,
+		prompt_tiles[PROMPT_TILE_ESCAPE],
 		esc_dst_rect,
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
@@ -58,7 +57,6 @@ PUBLIC void ui_draw_pause_menu(void) {
 		GetScreenWidth() / 2.0f + 50.0f,
 		GetScreenHeight() / 2.0f
 	};
-	Rectangle q_src_rect = { 272.0f, 160.0f, 16.0f, 16.0f };
 	Vector2 q_size = { 32.0f, 32.0f };
 	Rectangle q_dst_rect = {
 		quit_position.x - q_size.x / 2.0f,
@@ -68,7 +66,7 @@ PUBLIC void ui_draw_pause_menu(void) {
 	};
 	DrawTexturePro(
 		resources_prompt_texture,
-		q_src_rect,
+		prompt_tiles[PROMPT_TILE_Q],
 		q_dst_rect,
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
@@ -88,7 +86,6 @@ PUBLIC void ui_draw_pause_menu(void) {
 }
 
 PUBLIC void ui_draw_space_confirm(Color color) {
-	Rectangle space_src_rect = { 496.0f, 224.0f, 48.0f, 16.0f };
 	Vector2 space_dst_size = { 96.0f, 32.0f };
 	f32 text_spacing = 3.0f;
 	Rectangle space_dst_rect = {
@@ -99,7 +96,7 @@ PUBLIC void ui_draw_space_confirm(Color color) {
 	};
 	DrawTexturePro(
 		resources_prompt_texture,
-		space_src_rect,
+		prompt_tiles[PROMPT_TILE_SPACE],
 		space_dst_rect,
 		Vector2Zero(), 0.0f,
 		color

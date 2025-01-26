@@ -81,7 +81,6 @@ PUBLIC void intro_render(void) {
 	case INTRO_STATE_CONTINUE: {
 		ui_draw_space_confirm(THEME_BLACK);
 
-		Rectangle q_src_rect = { 272.0f, 160.0f, 16.0f, 16.0f };
 		Vector2 q_size = { 32.0f, 32.0f };
 		Vector2 quit_position = { 50.0f, GetScreenHeight() - q_size.y - 30.0f };
 		Rectangle q_dst_rect = {
@@ -92,7 +91,7 @@ PUBLIC void intro_render(void) {
 		};
 		DrawTexturePro(
 			resources_prompt_texture,
-			q_src_rect,
+			prompt_tiles[PROMPT_TILE_Q],
 			q_dst_rect,
 			Vector2Zero(), 0.0f,
 			THEME_BLACK
