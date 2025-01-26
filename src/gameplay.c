@@ -12,7 +12,9 @@ typedef enum GamePhase {
 	GAME_PHASE_PREPARE,
 	GAME_PHASE_INPUT,
 	GAME_PHASE_ATTACK,
-	GAME_PHASE_CHECK
+	GAME_PHASE_CHECK,
+	GAME_PHASE_GRIMOIRE_WAIT,
+	GAME_PHASE_GRIMOIRE_CONTINUE,
 } GamePhase;
 
 // these happen in GAME_PHASE_ATTACK
@@ -88,6 +90,8 @@ typedef struct GameContext {
 
 	u8 stage_infos_len;
 	u8 stage;
+
+	u8 known_attacks_len;
 } GameContext;
 
 // TODO: allocate context with gameplay arena.
@@ -123,9 +127,11 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
 GLOBAL const StageInfo gameplay_stage_infos[] = {
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 0 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 0, 0, 0, 0 }, 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 1, 0, 0, 0 }, 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 3, 3, 3 }, 5 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
@@ -152,9 +158,6 @@ PUBLIC void game_set_phase(GamePhase phase) {
 
 	// on exit
 	switch (game_context.phase) {
-	case GAME_PHASE_START: {
-		game_prepare_enemies(&game_context);
-	} break;
 	case GAME_PHASE_INPUT: {
 		// scroll through input_time
 		game_context.input_time_position += 1;
@@ -169,6 +172,9 @@ PUBLIC void game_set_phase(GamePhase phase) {
 
 	// on enter
 	switch (game_context.phase) {
+	case GAME_PHASE_PREPARE: {
+		game_context.elapsed = 0.0f;
+	} break;
 	case GAME_PHASE_INPUT: {
 		memset(&game_context.attack_queue, 0, MAX_ATTACK_PER_TURN);
 		memset(&game_context.active_sequence, 0, sizeof(Sequence));
@@ -182,7 +188,23 @@ PUBLIC void game_set_phase(GamePhase phase) {
 		game_context.enemy_attack_position = 0;
 		game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_START;
 	} break;
+	case GAME_PHASE_GRIMOIRE_WAIT: {
+		game_context.elapsed = 0.0f;
+	} break;
 	default: {
+	} break;
+	}
+}
+
+PRIVATE void game_transition_stage_type(GameContext *context) {
+	const StageInfo *stage_info = &context->stage_infos[context->stage];
+	switch (stage_info->type) {
+	case STAGE_TYPE_BATTLE: {
+		game_set_phase(GAME_PHASE_PREPARE);
+		game_prepare_enemies(context);
+	} break;
+	case STAGE_TYPE_GRIMOIRE: {
+		game_set_phase(GAME_PHASE_GRIMOIRE_WAIT);
 	} break;
 	}
 }
@@ -200,12 +222,11 @@ PUBLIC void gameplay_init(void) {
 	game_context.player_health = MAX_PLAYER_HEALTH;
 	game_context.stage_infos = gameplay_stage_infos;
 	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
-	game_context.known_attacks[0] = 1;
-	game_context.known_attacks[1] = 2;
+	game_context.known_attacks_len = 0;
 
 	paused = false;
 
-	game_set_phase(GAME_PHASE_PREPARE);
+	game_transition_stage_type(&game_context);
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
@@ -385,6 +406,15 @@ PUBLIC void game_attack_update(f32 delta) {
 	}
 }
 
+PRIVATE void game_advance_stage(GameContext *context) {
+	context->stage += 1;
+	if (context->stage < context->stage_infos_len) {
+		game_transition_stage_type(context);
+	} else {
+		scene_set_scene(SCENE_ENDING);
+	}
+}
+
 PRIVATE void game_check_update(GameContext *context) {
 	if (context->player_health == 0) {
 		scene_set_scene(SCENE_GAME_OVER);
@@ -398,13 +428,7 @@ PRIVATE void game_check_update(GameContext *context) {
 		}
 
 		if (done) {
-			context->stage += 1;
-			if (context->stage < context->stage_infos_len) {
-				game_prepare_enemies(context);
-				game_set_phase(GAME_PHASE_PREPARE);
-			} else {
-				scene_set_scene(SCENE_ENDING);
-			}
+			game_advance_stage(context);
 		} else {
 			game_set_phase(GAME_PHASE_PREPARE);
 		}
@@ -434,6 +458,17 @@ PUBLIC void gameplay_update(f32 delta) {
 		} break;
 		case GAME_PHASE_CHECK: {
 			game_check_update(&game_context);
+		} break;
+		case GAME_PHASE_GRIMOIRE_WAIT: {
+			game_context.elapsed += delta;
+			if (game_context.elapsed > 1.5f) {
+				game_set_phase(GAME_PHASE_GRIMOIRE_CONTINUE);
+			}
+		} break;
+		case GAME_PHASE_GRIMOIRE_CONTINUE: {
+			if (IsKeyPressed(KEY_SPACE)) {
+				game_advance_stage(&game_context);
+			}
 		} break;
 		default: {
 		} break;
@@ -554,6 +589,11 @@ PUBLIC void gameplay_render(void) {
 			10,
 			THEME_BLACK
 		);
+	} break;
+	case GAME_PHASE_GRIMOIRE_CONTINUE: {
+		if (!paused) {
+			ui_draw_space_confirm(THEME_BLACK);
+		}
 	} break;
 	default: {
 	} break;
