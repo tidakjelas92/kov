@@ -67,11 +67,11 @@ typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
 	Sequence active_sequence;
 
-	u16 *enemy_healths;
 	const f32 *input_times;
 	const StageInfo *stage_infos;
 
 	u8 known_attacks[ATTACK_INFOS_COUNT];
+	u16 enemy_healths[MAX_ENEMIES_PER_STAGE];
 
 	f32 elapsed;
 	u16 player_health;
@@ -93,10 +93,6 @@ typedef struct GameContext {
 // TODO: allocate context with gameplay arena.
 GLOBAL GameContext game_context;
 GLOBAL b8 paused;
-
-// TODO: allocate from main with stack allocator.
-GLOBAL u8 gameplay_buffer[64];
-GLOBAL MemArena gameplay_arena;
 
 // TODO: separate game data to own file.
 typedef struct EnemyAttackInfo {
@@ -141,7 +137,6 @@ GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 
 
 PRIVATE void game_prepare_enemies(GameContext *context) {
-	assert(context->enemy_healths != NULL);
 	const StageInfo *stage_info = &context->stage_infos[context->stage];
 	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
 		const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
@@ -198,7 +193,6 @@ PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof StageInfo: %zu", sizeof(StageInfo));
 	TraceLog(LOG_INFO, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
-	mem_arena_init(&gameplay_arena, gameplay_buffer, sizeof(gameplay_buffer));
 
 	memset(&game_context, 0, sizeof(GameContext));
 	game_context.input_times = gameplay_input_times;
@@ -206,17 +200,12 @@ PUBLIC void gameplay_init(void) {
 	game_context.player_health = MAX_PLAYER_HEALTH;
 	game_context.stage_infos = gameplay_stage_infos;
 	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
-	game_context.enemy_healths = (u16 *)mem_arena_alloc(&gameplay_arena, sizeof(u16) * MAX_ENEMIES_PER_STAGE);
 	game_context.known_attacks[0] = 1;
 	game_context.known_attacks[1] = 2;
 
 	paused = false;
 
 	game_set_phase(GAME_PHASE_PREPARE);
-}
-
-PUBLIC void gameplay_exit(void) {
-	gameplay_arena.used = 0;
 }
 
 PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {

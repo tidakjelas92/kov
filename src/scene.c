@@ -18,13 +18,6 @@ PUBLIC void scene_set_scene(Scene scene) {
 	}
 
 	// on exit
-	switch (scene_current) {
-	case SCENE_GAMEPLAY: {
-		gameplay_exit();
-	} break;
-	default: {
-	} break;
-	}
 	scene_current = scene;
 
 	// on enter
