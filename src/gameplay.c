@@ -12,19 +12,12 @@ typedef enum GamePhase {
 	GAME_PHASE_START,
 	GAME_PHASE_PREPARE,
 	GAME_PHASE_INPUT,
-	GAME_PHASE_ATTACK,
+	GAME_PHASE_ATTACK_PLAYER,
+	GAME_PHASE_ATTACK_ENEMY,
 	GAME_PHASE_CHECK,
 	GAME_PHASE_GRIMOIRE_WAIT,
 	GAME_PHASE_GRIMOIRE_CONTINUE,
 } GamePhase;
-
-// these happen in GAME_PHASE_ATTACK
-typedef enum GameAttackPhaseStep {
-	GAME_ATTACK_PHASE_STEP_START,
-	GAME_ATTACK_PHASE_STEP_PLAYER,
-	GAME_ATTACK_PHASE_STEP_ENEMY,
-	GAME_ATTACK_PHASE_STEP_DONE
-} GameAttackPhaseStep;
 
 typedef enum AttackType {
 	ATTACK_TYPE_SINGLE,
@@ -79,7 +72,6 @@ typedef struct GameContext {
 	f32 elapsed;
 	u16 player_health;
 	GamePhase phase;
-	GameAttackPhaseStep attack_phase_step;
 
 	u8 input_time_position;
 	u8 input_times_len;
@@ -199,11 +191,13 @@ PUBLIC void game_set_phase(GamePhase phase) {
 		game_context.elapsed = 0.0f;
 		game_context.attack_count = 0;
 	} break;
-	case GAME_PHASE_ATTACK: {
+	case GAME_PHASE_ATTACK_PLAYER: {
 		game_context.elapsed = 0.0f;
 		game_context.attack_position = 0;
+	} break;
+	case GAME_PHASE_ATTACK_ENEMY: {
+		game_context.elapsed = 0.0f;
 		game_context.enemy_attack_position = 0;
-		game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_START;
 	} break;
 	case GAME_PHASE_GRIMOIRE_WAIT: {
 		game_context.elapsed = 0.0f;
@@ -304,7 +298,7 @@ PRIVATE void game_prepare_update(f32 delta) {
 PRIVATE void game_input_update(f32 delta) {
 	game_context.elapsed += delta;
 	if (game_context.elapsed >= game_context.input_times[game_context.input_time_position]) {
-		game_set_phase(GAME_PHASE_ATTACK);
+		game_set_phase(GAME_PHASE_ATTACK_PLAYER);
 	} else {
 		if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
 			if (IsKeyPressed(KEY_W)) {
@@ -340,106 +334,99 @@ PRIVATE void game_input_update(f32 delta) {
 	}
 }
 
-PUBLIC void game_attack_update(f32 delta) {
-	const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
+PUBLIC void game_attack_player_update(GameContext *context, f32 delta) {
+	context->elapsed += delta;
+	if (context->elapsed >= 0.5f) {
+		if (context->attack_position >= context->attack_count) {
+			game_set_phase(GAME_PHASE_ATTACK_ENEMY);
+			return;
+		}
 
-	switch (game_context.attack_phase_step) {
-	case GAME_ATTACK_PHASE_STEP_START: {
-		game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_PLAYER;
-	} break;
-	case GAME_ATTACK_PHASE_STEP_PLAYER: {
-		game_context.elapsed += delta;
-		if (game_context.elapsed >= 0.5f) {
-			const AttackInfo *attack_info = &attack_infos[game_context.attack_queue[game_context.attack_position]];
+		const StageInfo *stage_info = &context->stage_infos[context->stage];
+		const AttackInfo *attack_info = &attack_infos[context->attack_queue[context->attack_position]];
 
-			switch (attack_info->type) {
-			case ATTACK_TYPE_SINGLE: {
-				u8 idx = 0;
-				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-					if (game_context.enemy_healths[i] > 0) {
-						idx = i;
+		switch (attack_info->type) {
+		case ATTACK_TYPE_SINGLE: {
+			u8 idx = 0;
+			for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+				if (context->enemy_healths[i] > 0) {
+					idx = i;
+					break;
+				}
+			}
+
+			if (context->enemy_healths[idx] >= attack_info->damage) {
+				context->enemy_healths[idx] -= attack_info->damage;
+			} else {
+				context->enemy_healths[idx] = 0;
+			}
+		} break;
+		case ATTACK_TYPE_AOE: {
+			for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+				if (context->enemy_healths[i] >= attack_info->damage) {
+					context->enemy_healths[i] -= attack_info->damage;
+				} else {
+					context->enemy_healths[i] = 0;
+				}
+			}
+		} break;
+		case ATTACK_TYPE_SPLASH: {
+			u16 applied = 0;
+			for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+				if (context->enemy_healths[i] > 0) {
+					u16 remainder = attack_info->damage - applied;
+					if (context->enemy_healths[i] >= remainder) {
+						applied += remainder;
+						context->enemy_healths[i] -= remainder;
+					} else {
+						applied += context->enemy_healths[i];
+						context->enemy_healths[i] = 0;
+					}
+
+					if (applied >= attack_info->damage) {
 						break;
 					}
 				}
-
-				if (game_context.enemy_healths[idx] >= attack_info->damage) {
-					game_context.enemy_healths[idx] -= attack_info->damage;
-				} else {
-					game_context.enemy_healths[idx] = 0;
-				}
-			} break;
-			case ATTACK_TYPE_AOE: {
-				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-					if (game_context.enemy_healths[i] >= attack_info->damage) {
-						game_context.enemy_healths[i] -= attack_info->damage;
-					} else {
-						game_context.enemy_healths[i] = 0;
-					}
-				}
-			} break;
-			case ATTACK_TYPE_SPLASH: {
-				u16 applied = 0;
-				for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-					if (game_context.enemy_healths[i] > 0) {
-						u16 remainder = attack_info->damage - applied;
-						if (game_context.enemy_healths[i] >= remainder) {
-							applied += remainder;
-							game_context.enemy_healths[i] -= remainder;
-						} else {
-							applied += game_context.enemy_healths[i];
-							game_context.enemy_healths[i] = 0;
-						}
-
-						if (applied >= attack_info->damage) {
-							break;
-						}
-					}
-				}
-			} break;
 			}
+		} break;
+		}
 
-			TraceLog(LOG_INFO, "player %s - %u", attack_info->name, attack_info->damage);
-			game_context.attack_position += 1;
-			game_context.elapsed = 0.0f;
-			PlaySound(resources_error_5_sound);
-			if (game_context.attack_position >= game_context.attack_count) {
-				game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_ENEMY;
+		TraceLog(LOG_INFO, "player %s - %u", attack_info->name, attack_info->damage);
+		context->attack_position += 1;
+		context->elapsed = 0.0f;
+		PlaySound(resources_error_5_sound);
+	}
+}
+
+PRIVATE void game_attack_enemy_update(GameContext *context, f32 delta) {
+	const StageInfo *stage_info = &context->stage_infos[context->stage];
+	while (context->enemy_healths[context->enemy_attack_position] == 0 && context->enemy_attack_position < stage_info->data.battle_data.enemies_len) {
+		context->enemy_attack_position += 1;
+	}
+
+	context->elapsed += delta;
+	if (context->elapsed >= 0.5f) {
+		if (context->enemy_attack_position >= stage_info->data.battle_data.enemies_len) {
+			game_set_phase(GAME_PHASE_CHECK);
+			return;
+		}
+
+		if (context->enemy_healths[context->enemy_attack_position] > 0) {
+			u8 enemy_id = stage_info->data.battle_data.enemy_ids[context->enemy_attack_position];
+			const EnemyInfo *enemy_info = &enemy_infos[enemy_id];
+			const EnemyAttackInfo *info = &enemy_attack_infos[enemy_infos[enemy_id].attack_id];
+			TraceLog(LOG_INFO, "(%d) %s: %s - %u", context->enemy_attack_position, enemy_info->name, info->name, info->damage);
+
+			if (context->player_health >= info->damage) {
+				context->player_health -= info->damage;
+			} else {
+				context->player_health = 0;
 			}
 		}
-	} break;
-	case GAME_ATTACK_PHASE_STEP_ENEMY: {
-		game_context.elapsed += delta;
-		if (game_context.elapsed >= 0.5f) {
-			while (game_context.enemy_healths[game_context.enemy_attack_position] == 0 && game_context.enemy_attack_position + 1 < stage_info->data.battle_data.enemies_len) {
-				game_context.enemy_attack_position += 1;
-			}
 
-			if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
-				u8 enemy_id = stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position];
-				const EnemyInfo *enemy_info = &enemy_infos[enemy_id];
-				const EnemyAttackInfo *info = &enemy_attack_infos[enemy_infos[enemy_id].attack_id];
-				TraceLog(LOG_INFO, "(%d) %s: %s - %u", game_context.enemy_attack_position, enemy_info->name, info->name, info->damage);
-
-				if (game_context.player_health >= info->damage) {
-					game_context.player_health -= info->damage;
-				} else {
-					game_context.player_health = 0;
-				}
-			}
-
-			PlaySound(resources_error_5_sound);
-			game_context.enemy_attack_position += 1;
-			game_context.elapsed = 0.0f;
-			if (game_context.enemy_attack_position >= stage_info->data.battle_data.enemies_len) {
-				game_context.attack_phase_step = GAME_ATTACK_PHASE_STEP_DONE;
-			}
-		}
-	} break;
-	case GAME_ATTACK_PHASE_STEP_DONE: {
-		game_set_phase(GAME_PHASE_CHECK);
-	} break;
-	default: {
-	} break;
+		PlaySound(resources_error_5_sound);
+		context->enemy_attack_position += 1;
+		context->elapsed = 0.0f;
 	}
 }
 
@@ -495,8 +482,11 @@ PUBLIC void gameplay_update(f32 delta) {
 		case GAME_PHASE_INPUT: {
 			game_input_update(delta);
 		} break;
-		case GAME_PHASE_ATTACK: {
-			game_attack_update(delta);
+		case GAME_PHASE_ATTACK_PLAYER: {
+			game_attack_player_update(&game_context, delta);
+		} break;
+		case GAME_PHASE_ATTACK_ENEMY: {
+			game_attack_enemy_update(&game_context, delta);
 		} break;
 		case GAME_PHASE_CHECK: {
 			game_check_update(&game_context);
@@ -659,50 +649,54 @@ PRIVATE void gameplay_render_attack_queue(GameContext *context) {
 	}
 }
 
-PRIVATE void gameplay_render_current_attack(const AttackInfo *attack_info) {
-	Vector2 panel_size = { 200, 50 };
-	Rectangle panel_rect = {
-		GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
-		150,
-		panel_size.x,
-		panel_size.y
-	};
-	DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_BLACK);
+PRIVATE void gameplay_render_current_attack(const GameContext *context, const AttackInfo *attack_info) {
+	if (context->attack_count > 0 && context->attack_position < context->attack_count) {
+		Vector2 panel_size = { 200, 50 };
+		Rectangle panel_rect = {
+			GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
+			150,
+			panel_size.x,
+			panel_size.y
+		};
+		DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_BLACK);
 
-	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
-	DrawTextEx(
-		resources_pixel_operator_font,
-		attack_info->name,
-		(Vector2){
-			GetScreenWidth() / 2.0f - text_size.x / 2.0f,
-			150.0f,
-		},
-		resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
-		THEME_WHITE
-	);
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			attack_info->name,
+			(Vector2){
+				GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+				150.0f,
+			},
+			resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
+			THEME_WHITE
+		);
+	}
 }
 
-PRIVATE void gameplay_render_enemy_attack(const EnemyAttackInfo *enemy_attack_info) {
-	Vector2 panel_size = { 200, 50 };
-	Rectangle panel_rect = {
-		GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
-		150,
-		panel_size.x,
-		panel_size.y
-	};
-	DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_RED);
+PRIVATE void gameplay_render_enemy_attack(const GameContext *context, const EnemyAttackInfo *enemy_attack_info) {
+	if (context->enemy_attack_position < MAX_ENEMIES_PER_STAGE) {
+		Vector2 panel_size = { 200, 50 };
+		Rectangle panel_rect = {
+			GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
+			150,
+			panel_size.x,
+			panel_size.y
+		};
+		DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_RED);
 
-	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, enemy_attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
-	DrawTextEx(
-		resources_pixel_operator_font,
-		enemy_attack_info->name,
-		(Vector2){
-			GetScreenWidth() / 2.0f - text_size.x / 2.0f,
-			panel_rect.y + panel_size.y / 2.0f - text_size.y / 2.0f,
-		},
-		resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
-		THEME_WHITE
-	);
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, enemy_attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			enemy_attack_info->name,
+			(Vector2){
+				GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+				panel_rect.y + panel_size.y / 2.0f - text_size.y / 2.0f,
+			},
+			resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
+			THEME_WHITE
+		);
+	}
 }
 
 PRIVATE void gameplay_render_input_time(GameContext *context) {
@@ -771,20 +765,14 @@ PUBLIC void gameplay_render(void) {
 			ui_draw_space_confirm(THEME_BLACK);
 		}
 	} break;
-	case GAME_PHASE_ATTACK: {
-		switch (game_context.attack_phase_step) {
-		case GAME_ATTACK_PHASE_STEP_PLAYER: {
-			gameplay_render_current_attack(&attack_infos[game_context.attack_queue[game_context.attack_position]]);
-		} break;
-		case GAME_ATTACK_PHASE_STEP_ENEMY: {
-			if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
-				const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
-				const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
-				gameplay_render_enemy_attack(&enemy_attack_infos[enemy_info->attack_id]);
-			}
-		} break;
-		default: {
-		} break;
+	case GAME_PHASE_ATTACK_PLAYER: {
+		gameplay_render_current_attack(&game_context, &attack_infos[game_context.attack_queue[game_context.attack_position]]);
+	} break;
+	case GAME_PHASE_ATTACK_ENEMY: {
+		if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
+			const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
+			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
+			gameplay_render_enemy_attack(&game_context, &enemy_attack_infos[enemy_info->attack_id]);
 		}
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {
