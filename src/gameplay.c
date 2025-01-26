@@ -613,6 +613,62 @@ PRIVATE void gameplay_render_enemies(GameContext *context) {
 	}
 }
 
+PRIVATE void gameplay_render_active_sequence(GameContext *context) {
+	Vector2 arrow_dst_size = { 48.0f, 48.0f };
+	Vector2 start_position = {
+		GetScreenWidth() / 2.0f - arrow_dst_size.x * context->active_position / 2.0f,
+		GetScreenHeight() - 120.0f - arrow_dst_size.y
+	};
+
+	for (u32 i = 0; i < context->active_position; i++) {
+		Rectangle arrow_dst_rect = {
+			start_position.x + arrow_dst_size.x * i,
+			start_position.y,
+			arrow_dst_size.x,
+			arrow_dst_size.y
+		};
+		DrawTexturePro(
+			resources_prompt_texture,
+			// basically works because the value is literally the same.
+			prompt_tiles[context->active_sequence.buffer[i] - 1],
+			arrow_dst_rect,
+			Vector2Zero(), 0.0f,
+			THEME_BLACK
+		);
+	}
+}
+
+PRIVATE void gameplay_render_attack_queue(GameContext *context) {
+	for (u32 i = 0; i < game_context.attack_count; i++) {
+		f32 start_y = 300.0f;
+
+		const char *text = attack_infos[game_context.attack_queue[i]].name;
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 2.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			text,
+			(Vector2){
+				GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+				start_y + text_size.y * i,
+			},
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
+	}
+}
+
+PRIVATE void gameplay_render_input_time(GameContext *context) {
+	f32 input_time = context->input_times[context->input_time_position];
+	f32 time_bar_width = (input_time - context->elapsed) / input_time * GetScreenWidth();
+	DrawRectangle(
+		GetScreenWidth() / 2.0f - time_bar_width / 2.0f,
+		GetScreenHeight() - 10,
+		time_bar_width,
+		10,
+		THEME_BLACK
+	);
+}
+
 PUBLIC void gameplay_render(void) {
 	char stage_text[6];
 	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage + 1, game_context.stage_infos_len);
@@ -660,59 +716,12 @@ PUBLIC void gameplay_render(void) {
 		);
 	} break;
 	case GAME_PHASE_INPUT: {
-		Vector2 arrow_dst_size = { 48.0f, 48.0f };
-		Vector2 start_position = {
-			GetScreenWidth() / 2.0f - arrow_dst_size.x * game_context.active_position / 2.0f,
-			GetScreenHeight() - 120.0f - arrow_dst_size.y
-		};
-
-		for (u32 i = 0; i < game_context.active_position; i++) {
-			Rectangle arrow_dst_rect = {
-				start_position.x + arrow_dst_size.x * i,
-				start_position.y,
-				arrow_dst_size.x,
-				arrow_dst_size.y
-			};
-			DrawTexturePro(
-				resources_prompt_texture,
-				// basically works because the value is literally the same.
-				prompt_tiles[game_context.active_sequence.buffer[i] - 1],
-				arrow_dst_rect,
-				Vector2Zero(), 0.0f,
-				THEME_BLACK
-			);
-		}
-
-		for (u32 i = 0; i < game_context.attack_count; i++) {
-			f32 start_y = 300.0f;
-
-			const char *text = attack_infos[game_context.attack_queue[i]].name;
-			Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 2.0f);
-			DrawTextEx(
-				resources_pixel_operator_font,
-				text,
-				(Vector2){
-					GetScreenWidth() / 2.0f - text_size.x / 2.0f,
-					start_y + text_size.y * i,
-				},
-				resources_pixel_operator_font.baseSize, 0.0f,
-				THEME_BLACK
-			);
-		}
-
+		gameplay_render_active_sequence(&game_context);
+		gameplay_render_attack_queue(&game_context);
+		gameplay_render_input_time(&game_context);
 		if (!paused) {
 			ui_draw_space_confirm(THEME_BLACK);
 		}
-
-		f32 input_time = game_context.input_times[game_context.input_time_position];
-		f32 time_bar_width = (input_time - game_context.elapsed) / input_time * GetScreenWidth();
-		DrawRectangle(
-			GetScreenWidth() / 2.0f - time_bar_width / 2.0f,
-			GetScreenHeight() - 10,
-			time_bar_width,
-			10,
-			THEME_BLACK
-		);
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {
 		if (!paused) {
