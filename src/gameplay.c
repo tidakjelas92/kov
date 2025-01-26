@@ -111,6 +111,7 @@ GLOBAL const EnemyAttackInfo enemy_attack_infos[] = {
 	{ "Scratch", 1 },
 	{ "Wild Swing", 3 },
 	{ "Fireball", 5 },
+	{ "Venom", 10 },
 	{ "Demonic Breath", 7 }
 };
 #define ENEMY_ATTACK_INFOS_COUNT sizeof(enemy_attack_infos) / sizeof(EnemyAttackInfo)
@@ -129,10 +130,10 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 	{ "Goblin", 6, 1, ONEBIT_TILE_GOBLIN },
 	{ "Skeleton", 3, 1, ONEBIT_TILE_SKELETON },
 	{ "Mad Wizard", 10, 4, ONEBIT_TILE_MAD_WIZARD },
-	{ "Swarm", 1, 3, ONEBIT_TILE_SWARM },
-	{ "Arachnid Queen", 30, 3, ONEBIT_TILE_ARACHNID_QUEEN },
+	{ "Swarm", 1, 2, ONEBIT_TILE_SWARM },
+	{ "Arachnid Queen", 30, 5, ONEBIT_TILE_ARACHNID_QUEEN },
 	{ "Living Armor", 20, 3, ONEBIT_TILE_LIVING_ARMOR },
-	{ "Demon", 50, 5, ONEBIT_TILE_DEMON }
+	{ "Demon", 50, 6, ONEBIT_TILE_DEMON }
 };
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
@@ -639,22 +640,68 @@ PRIVATE void gameplay_render_active_sequence(GameContext *context) {
 }
 
 PRIVATE void gameplay_render_attack_queue(GameContext *context) {
-	for (u32 i = 0; i < game_context.attack_count; i++) {
-		f32 start_y = 300.0f;
-
-		const char *text = attack_infos[game_context.attack_queue[i]].name;
-		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 2.0f);
+	if (context->attack_count > 0) {
+		const AttackInfo *attack_info = &attack_infos[context->attack_queue[context->attack_count - 1]];
+		char text[24] = { 0 };
+		snprintf(text, sizeof(text), "(%d) %s", context->attack_count, attack_info->name);
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize * 2.0f, 2.0f);
 		DrawTextEx(
 			resources_pixel_operator_font,
 			text,
 			(Vector2){
 				GetScreenWidth() / 2.0f - text_size.x / 2.0f,
-				start_y + text_size.y * i,
+				GetScreenHeight() / 2.0f + 50.0f,
 			},
-			resources_pixel_operator_font.baseSize, 0.0f,
+			resources_pixel_operator_font.baseSize * 2.0f, 0.0f,
 			THEME_BLACK
 		);
 	}
+}
+
+PRIVATE void gameplay_render_current_attack(const AttackInfo *attack_info) {
+	Vector2 panel_size = { 200, 50 };
+	Rectangle panel_rect = {
+		GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
+		150,
+		panel_size.x,
+		panel_size.y
+	};
+	DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_BLACK);
+
+	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+	DrawTextEx(
+		resources_pixel_operator_font,
+		attack_info->name,
+		(Vector2){
+			GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+			150.0f,
+		},
+		resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
+		THEME_WHITE
+	);
+}
+
+PRIVATE void gameplay_render_enemy_attack(const EnemyAttackInfo *enemy_attack_info) {
+	Vector2 panel_size = { 200, 50 };
+	Rectangle panel_rect = {
+		GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
+		150,
+		panel_size.x,
+		panel_size.y
+	};
+	DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_RED);
+
+	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, enemy_attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+	DrawTextEx(
+		resources_pixel_operator_font,
+		enemy_attack_info->name,
+		(Vector2){
+			GetScreenWidth() / 2.0f - text_size.x / 2.0f,
+			panel_rect.y + panel_size.y / 2.0f - text_size.y / 2.0f,
+		},
+		resources_pixel_operator_font.baseSize * 3.0f, 0.0f,
+		THEME_WHITE
+	);
 }
 
 PRIVATE void gameplay_render_input_time(GameContext *context) {
@@ -721,6 +768,22 @@ PUBLIC void gameplay_render(void) {
 		gameplay_render_input_time(&game_context);
 		if (!paused) {
 			ui_draw_space_confirm(THEME_BLACK);
+		}
+	} break;
+	case GAME_PHASE_ATTACK: {
+		switch (game_context.attack_phase_step) {
+		case GAME_ATTACK_PHASE_STEP_PLAYER: {
+			gameplay_render_current_attack(&attack_infos[game_context.attack_queue[game_context.attack_position]]);
+		} break;
+		case GAME_ATTACK_PHASE_STEP_ENEMY: {
+			if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
+				const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
+				const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
+				gameplay_render_enemy_attack(&enemy_attack_infos[enemy_info->attack_id]);
+			}
+		} break;
+		default: {
+		} break;
 		}
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {
