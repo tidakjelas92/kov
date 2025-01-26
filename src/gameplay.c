@@ -1,7 +1,7 @@
 #define MAX_INPUT_PER_SEQUENCE 8
 #define MAX_ATTACK_PER_TURN 32
 #define MAX_ENEMIES_PER_STAGE 5
-#define MAX_PLAYER_HEALTH 20
+#define MAX_PLAYER_HEALTH 40
 
 // 0: up, 1: right, 2: down, 3: left
 typedef struct Sequence {
@@ -108,8 +108,10 @@ typedef struct EnemyAttackInfo {
 GLOBAL const EnemyAttackInfo enemy_attack_infos[] = {
 	{ "Stare", 0 },
 	{ "Hit", 2 },
-	{ "Scratch", 2 },
-	{ "Bite", 3 }
+	{ "Scratch", 1 },
+	{ "Wild Swing", 3 },
+	{ "Fireball", 5 },
+	{ "Demonic Breath", 7 }
 };
 #define ENEMY_ATTACK_INFOS_COUNT sizeof(enemy_attack_infos) / sizeof(EnemyAttackInfo)
 
@@ -123,7 +125,13 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 	{ "Training Dummy 1", 10, 0 },
 	{ "Training Dummy 2", 15, 0 },
 	{ "Instructor", 30, 1 },
-	{ "Goblin", 6, 1 }
+	{ "Goblin", 6, 1 },
+	{ "Skeleton", 3, 1 },
+	{ "Mad Wizard", 10, 4 },
+	{ "Swarm", 1, 3 },
+	{ "Arachnid Queen", 30, 3 },
+	{ "Living Armor", 20, 3 },
+	{ "Demon", 50, 5 }
 };
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
@@ -133,9 +141,15 @@ GLOBAL const StageInfo gameplay_stage_infos[] = {
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 1, 0, 0, 0 }, 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 0, 0, 0 }, 2 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 3, 3, 3 }, 5 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 5, 0, 0 }, 3 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 6, 6, 6, 6, 6 }, 5 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 7, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 8, 8, 0, 0, 0 }, 2 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 4, 4, 9 }, 5 } } },
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
@@ -408,6 +422,11 @@ PUBLIC void game_attack_update(f32 delta) {
 }
 
 PRIVATE void game_advance_stage(GameContext *context) {
+	context->player_health += 5;
+	if (context->player_health > MAX_PLAYER_HEALTH) {
+		context->player_health = MAX_PLAYER_HEALTH;
+	}
+
 	context->stage += 1;
 	if (context->stage < context->stage_infos_len) {
 		game_transition_stage_type(context);
@@ -490,11 +509,11 @@ PUBLIC void gameplay_render(void) {
 	);
 
 	DrawTexturePro(
-		resources_rpg_texture,
-		(Rectangle){ 0, 112, 16, 16 },
+		resources_onebit_texture,
+		onebit_tiles[ONEBIT_TILE_PLAYER],
 		(Rectangle){ GetScreenWidth() / 2.0f - 300.0f, 300.0f, 32.0f, 32.0f },
 		Vector2Zero(), 0.0f,
-		WHITE
+		THEME_BLACK
 	);
 	ui_draw_health_bar(
 		(Vector2){ 100, 250 },
