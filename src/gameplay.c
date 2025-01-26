@@ -536,8 +536,6 @@ PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 	Vector2 position = { 20, 20 };
 	f32 row_height = 20.0f;
 	for (u32 i = 0; i < context->known_attacks_len; i++) {
-		position.y += row_height;
-
 		const AttackInfo *attack_info = &attack_infos[context->known_attacks[i]];
 		char text[24] = { 0 };
 		snprintf(text, sizeof(text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
@@ -569,6 +567,7 @@ PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 				THEME_BLACK
 			);
 		}
+		position.y += row_height;
 	}
 }
 
