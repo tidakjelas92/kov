@@ -81,6 +81,21 @@ PUBLIC void intro_render(void) {
 	case INTRO_STATE_CONTINUE: {
 		ui_draw_space_confirm(THEME_BLACK);
 
+		const char *title_text = "KOV";
+		f32 title_text_font_size = resources_pixelplay_font.baseSize * 7.0f;
+		Vector2 title_text_size = MeasureTextEx(resources_pixelplay_font, title_text, title_text_font_size, 4.0f);
+
+		DrawTextEx(
+			resources_pixelplay_font,
+			title_text,
+			(Vector2){
+				GetScreenWidth() / 2.0f - title_text_size.x / 2.0f,
+				GetScreenHeight() / 2.0f - 150.0f
+			},
+			title_text_font_size, 4.0f,
+			THEME_BLACK
+		);
+
 		Vector2 q_size = { 32.0f, 32.0f };
 		Vector2 quit_position = { 50.0f, GetScreenHeight() - q_size.y - 30.0f };
 		Rectangle q_dst_rect = {
