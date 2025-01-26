@@ -206,6 +206,11 @@ PUBLIC void game_set_phase(GamePhase phase) {
 	case GAME_PHASE_GRIMOIRE_WAIT: {
 		game_context.elapsed = 0.0f;
 	} break;
+	case GAME_PHASE_GRIMOIRE_CONTINUE: {
+		u8 attack_id = game_context.stage_infos[game_context.stage].data.grimoire_data.attack_id;
+		game_context.known_attacks[game_context.known_attacks_len] = attack_id;
+		game_context.known_attacks_len += 1;
+	} break;
 	default: {
 	} break;
 	}
@@ -523,6 +528,46 @@ PRIVATE const char *get_attack_type_string(AttackType type) {
 	}
 }
 
+PRIVATE void gameplay_render_known_attacks(GameContext *context) {
+	Vector2 position = { 20, 20 };
+	f32 row_height = 20.0f;
+	for (u32 i = 0; i < context->known_attacks_len; i++) {
+		position.y += row_height;
+
+		const AttackInfo *attack_info = &attack_infos[context->known_attacks[i]];
+		char text[24] = { 0 };
+		snprintf(text, sizeof(text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
+	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 0.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			text,
+			position,
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
+
+		Vector2 arrow_dst_size = { 16.0f, 16.0f };
+		const Sequence *sequence = &attack_info->sequence;
+		u8 sequence_len = sequence_get_len(sequence);
+		for (u32 j = 0; j < sequence_len; j++) {
+			Rectangle arrow_dst_rect = {
+				position.x + text_size.x + 5.0f + arrow_dst_size.x * j,
+				position.y,
+				arrow_dst_size.x,
+				arrow_dst_size.y
+			};
+			DrawTexturePro(
+				resources_prompt_texture,
+				// basically works because the value is literally the same.
+				prompt_tiles[sequence->buffer[j] - 1],
+				arrow_dst_rect,
+				Vector2Zero(), 0.0f,
+				THEME_BLACK
+			);
+		}
+	}
+}
+
 PUBLIC void gameplay_render(void) {
 	char stage_text[6];
 	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.stage_infos_len);
@@ -547,6 +592,8 @@ PUBLIC void gameplay_render(void) {
 		160,
 		(f32)game_context.player_health / (f32)MAX_PLAYER_HEALTH
 	);
+
+	gameplay_render_known_attacks(&game_context);
 
 	const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
 	Vector2 bars_start_position = { GetScreenWidth() / 2.0f + 300.0f, 250.0f };
