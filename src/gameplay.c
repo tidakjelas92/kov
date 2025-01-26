@@ -119,19 +119,20 @@ typedef struct EnemyInfo {
 	const char *name;
 	u16 health;
 	u8 attack_id;
+	u8 tile;
 } EnemyInfo;
 
 GLOBAL const EnemyInfo enemy_infos[] = {
-	{ "Training Dummy 1", 10, 0 },
-	{ "Training Dummy 2", 15, 0 },
-	{ "Instructor", 30, 1 },
-	{ "Goblin", 6, 1 },
-	{ "Skeleton", 3, 1 },
-	{ "Mad Wizard", 10, 4 },
-	{ "Swarm", 1, 3 },
-	{ "Arachnid Queen", 30, 3 },
-	{ "Living Armor", 20, 3 },
-	{ "Demon", 50, 5 }
+	{ "Training Dummy 1", 10, 0, ONEBIT_TILE_TRAINING_DUMMY_1 },
+	{ "Training Dummy 2", 15, 0, ONEBIT_TILE_TRAINING_DUMMY_2 },
+	{ "Instructor", 30, 1, ONEBIT_TILE_INSTRUCTOR },
+	{ "Goblin", 6, 1, ONEBIT_TILE_GOBLIN },
+	{ "Skeleton", 3, 1, ONEBIT_TILE_SKELETON },
+	{ "Mad Wizard", 10, 4, ONEBIT_TILE_MAD_WIZARD },
+	{ "Swarm", 1, 3, ONEBIT_TILE_SWARM },
+	{ "Arachnid Queen", 30, 3, ONEBIT_TILE_ARACHNID_QUEEN },
+	{ "Living Armor", 20, 3, ONEBIT_TILE_LIVING_ARMOR },
+	{ "Demon", 50, 5, ONEBIT_TILE_DEMON }
 };
 #define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
 
@@ -568,9 +569,39 @@ PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 	}
 }
 
+PRIVATE void gameplay_render_enemies(GameContext *context) {
+	const StageInfo *stage_info = &context->stage_infos[context->stage];
+	Vector2 position = { GetScreenWidth() / 2.0f + 300.0f, 300.0f };
+	Vector2 size = { 32, 32 };
+	for (i32 i = stage_info->data.battle_data.enemies_len - 1; i >= 0 ; i--) {
+		position.x -= size.x;
+
+		if (context->enemy_healths[i] > 0) {
+			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+			DrawTexturePro(
+				resources_onebit_texture,
+				onebit_tiles[enemy_info->tile],
+				(Rectangle){ position.x, position.y, size.x, size.y },
+				Vector2Zero(), 0.0f,
+				THEME_BLACK
+			);
+		}
+	}
+
+	Vector2 bars_start_position = { GetScreenWidth() / 2.0f + 300.0f, 250.0f };
+	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+		bars_start_position.y += 25.0f;
+		ui_draw_health_bar(
+			bars_start_position,
+			160,
+			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
+		);
+	}
+}
+
 PUBLIC void gameplay_render(void) {
 	char stage_text[6];
-	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage, game_context.stage_infos_len);
+	snprintf(stage_text, sizeof(stage_text),"%u/%u", game_context.stage + 1, game_context.stage_infos_len);
 	Vector2 stage_text_size = MeasureTextEx(resources_pixelplay_font, stage_text, resources_pixelplay_font.baseSize * 3.0f, 4.0f);
 	DrawTextEx(
 		resources_pixelplay_font,
@@ -594,17 +625,7 @@ PUBLIC void gameplay_render(void) {
 	);
 
 	gameplay_render_known_attacks(&game_context);
-
-	const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
-	Vector2 bars_start_position = { GetScreenWidth() / 2.0f + 300.0f, 250.0f };
-	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-		bars_start_position.y += 25.0f;
-		ui_draw_health_bar(
-			bars_start_position,
-			160,
-			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
-		);
-	}
+	gameplay_render_enemies(&game_context);
 
 	switch (game_context.phase) {
 	case GAME_PHASE_PREPARE: {
@@ -726,6 +747,7 @@ PUBLIC void gameplay_render(void) {
 			THEME_WHITE
 		);
 
+		const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
 		const AttackInfo *attack_info = &attack_infos[stage_info->data.grimoire_data.attack_id];
 		char name_text[24] = { 0 };
 		snprintf(name_text, sizeof(name_text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
