@@ -588,14 +588,28 @@ PRIVATE void gameplay_render_enemies(GameContext *context) {
 		}
 	}
 
-	Vector2 bars_start_position = { GetScreenWidth() / 2.0f + 300.0f, 250.0f };
+	Vector2 bars_position = { GetScreenWidth() / 2.0f + 220.0f, 120.0f };
 	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-		bars_start_position.y += 25.0f;
 		ui_draw_health_bar(
-			bars_start_position,
+			bars_position,
 			160,
 			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
 		);
+		bars_position.y += 8.0f;
+
+		const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, enemy_info->name, resources_pixel_operator_font.baseSize, 0.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			enemy_info->name,
+			(Vector2){
+				bars_position.x + 80.0f - text_size.x,
+				bars_position.y
+			},
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
+		bars_position.y += text_size.y + 12.0f;
 	}
 }
 
@@ -619,7 +633,7 @@ PUBLIC void gameplay_render(void) {
 		THEME_BLACK
 	);
 	ui_draw_health_bar(
-		(Vector2){ 100, 250 },
+		(Vector2){ GetScreenWidth() / 2.0f - 220.0f, 120 },
 		160,
 		(f32)game_context.player_health / (f32)MAX_PLAYER_HEALTH
 	);
@@ -717,6 +731,7 @@ PUBLIC void gameplay_render(void) {
 			panel_size.x,
 			panel_size.y
 		};
+		DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_WHITE);
 		DrawRectangleRec(panel_rect, THEME_BLACK);
 
 		Vector2 grim_size = { 80, 80 };
