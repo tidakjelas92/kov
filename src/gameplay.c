@@ -216,13 +216,13 @@ PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
 
-	memset(&game_context, 0, sizeof(GameContext));
-	game_context.input_times = gameplay_input_times;
-	game_context.input_times_len = GAMEPLAY_INPUT_TIMES_LEN;
-	game_context.player_health = MAX_PLAYER_HEALTH;
-	game_context.stage_infos = gameplay_stage_infos;
-	game_context.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN;
-	game_context.known_attacks_len = 0;
+	game_context = (GameContext) {
+		.input_times = gameplay_input_times,
+		.input_times_len = GAMEPLAY_INPUT_TIMES_LEN,
+		.player_health = MAX_PLAYER_HEALTH,
+		.stage_infos = gameplay_stage_infos,
+		.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN,
+	};
 
 	paused = false;
 
