@@ -30,7 +30,7 @@ if "%main%"=="1" (
 
 	if "%release%"=="1" (
 		echo info: release build mode
-		set cflags=%common_cflags%
+		set cflags=%common_cflags% /O2
 	) else (
 		echo info: debug build mode
 		set cflags=%common_cflags%
