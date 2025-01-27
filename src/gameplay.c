@@ -1,3 +1,5 @@
+#define GAMEPLAY_PLAYER_MAX_HEALTH 40
+
 // TODO: allocate context with gameplay arena.
 GLOBAL GameContext game_context;
 
@@ -66,14 +68,14 @@ PUBLIC void gameplay_init(void) {
 	game_context = (GameContext) {
 		.input_times = gameplay_input_times,
 		.input_times_len = GAMEPLAY_INPUT_TIMES_LEN,
-		.player_health = MAX_PLAYER_HEALTH,
 		.stage_infos = gameplay_stage_infos,
 		.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN,
 		.attack_infos = gameplay_attack_infos,
 		.attack_infos_len = GAMEPLAY_ATTACK_INFOS_LEN,
 		.known_attacks = gameplay_known_attacks,
 		.enemy_attack_infos = gameplay_enemy_attack_infos,
-		.enemy_infos = gameplay_enemy_infos
+		.enemy_infos = gameplay_enemy_infos,
+		.player_max_health = GAMEPLAY_PLAYER_MAX_HEALTH
 	};
 
 	app_paused = false;
@@ -331,7 +333,7 @@ PUBLIC void gameplay_render(void) {
 	ui_draw_health_bar(
 		(Vector2){ GetScreenWidth() / 2.0f - 220.0f, 120 },
 		160,
-		(f32)game_context.player_health / (f32)MAX_PLAYER_HEALTH
+		(f32)game_context.player_health / (f32)game_context.player_max_health
 	);
 
 	gameplay_render_known_attacks(&game_context);

@@ -1,6 +1,5 @@
 #define MAX_ATTACK_PER_TURN 32
 #define MAX_ENEMIES_PER_STAGE 5
-#define MAX_PLAYER_HEALTH 40
 
 typedef enum GamePhase {
 	GAME_PHASE_START,
@@ -74,6 +73,7 @@ typedef struct GameContext {
 
 	f32 elapsed;
 	u16 player_health;
+	u16 player_max_health;
 	u8 phase; // enum GamePhase
 
 	u8 input_time_position;
@@ -113,6 +113,9 @@ PUBLIC void game_set_phase(GameContext *context, GamePhase phase) {
 
 	// on exit
 	switch (context->phase) {
+	case GAME_PHASE_START: {
+		context->player_health = context->player_max_health;
+	} break;
 	case GAME_PHASE_INPUT: {
 		// scroll through input_time
 		context->input_time_position += 1;
@@ -318,8 +321,8 @@ PRIVATE void game_transition_stage_type(GameContext *context) {
 
 PRIVATE void game_advance_stage(GameContext *context) {
 	context->player_health += 5;
-	if (context->player_health > MAX_PLAYER_HEALTH) {
-		context->player_health = MAX_PLAYER_HEALTH;
+	if (context->player_health > context->player_max_health) {
+		context->player_health = context->player_max_health;
 	}
 
 	context->stage += 1;
