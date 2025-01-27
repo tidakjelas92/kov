@@ -43,6 +43,19 @@ GLOBAL const EnemyAttackInfo gameplay_enemy_attack_infos[] = {
 	{ "Demonic Breath", 7 }
 };
 
+GLOBAL const EnemyInfo gameplay_enemy_infos[] = {
+	{ "Training Dummy 1", 10, 0, ONEBIT_TILE_TRAINING_DUMMY_1 },
+	{ "Training Dummy 2", 15, 0, ONEBIT_TILE_TRAINING_DUMMY_2 },
+	{ "Instructor", 30, 1, ONEBIT_TILE_INSTRUCTOR },
+	{ "Goblin", 6, 1, ONEBIT_TILE_GOBLIN },
+	{ "Skeleton", 3, 1, ONEBIT_TILE_SKELETON },
+	{ "Mad Wizard", 10, 4, ONEBIT_TILE_MAD_WIZARD },
+	{ "Swarm", 1, 2, ONEBIT_TILE_SWARM },
+	{ "Arachnid Queen", 30, 5, ONEBIT_TILE_ARACHNID_QUEEN },
+	{ "Living Armor", 20, 3, ONEBIT_TILE_LIVING_ARMOR },
+	{ "Demon", 50, 6, ONEBIT_TILE_DEMON }
+};
+
 PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(gameplay_attack_infos));
@@ -59,7 +72,8 @@ PUBLIC void gameplay_init(void) {
 		.attack_infos = gameplay_attack_infos,
 		.attack_infos_len = GAMEPLAY_ATTACK_INFOS_LEN,
 		.known_attacks = gameplay_known_attacks,
-		.enemy_attack_infos = gameplay_enemy_attack_infos
+		.enemy_attack_infos = gameplay_enemy_attack_infos,
+		.enemy_infos = gameplay_enemy_infos
 	};
 
 	app_paused = false;
@@ -153,7 +167,7 @@ PRIVATE void gameplay_render_enemies(GameContext *context) {
 		position.x -= size.x;
 
 		if (context->enemy_healths[i] > 0) {
-			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+			const EnemyInfo *enemy_info = &context->enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
 			DrawTexturePro(
 				resources_onebit_texture,
 				onebit_tiles[enemy_info->tile],
@@ -169,11 +183,11 @@ PRIVATE void gameplay_render_enemies(GameContext *context) {
 		ui_draw_health_bar(
 			bars_position,
 			160,
-			(f32)game_context.enemy_healths[i] / (f32)enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
+			(f32)game_context.enemy_healths[i] / (f32)context->enemy_infos[stage_info->data.battle_data.enemy_ids[i]].health
 		);
 		bars_position.y += 8.0f;
 
-		const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+		const EnemyInfo *enemy_info = &context->enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
 		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, enemy_info->name, resources_pixel_operator_font.baseSize, 0.0f);
 		DrawTextEx(
 			resources_pixel_operator_font,
@@ -355,7 +369,7 @@ PUBLIC void gameplay_render(void) {
 	case GAME_PHASE_ATTACK_ENEMY: {
 		if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
 			const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
-			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
+			const EnemyInfo *enemy_info = &game_context.enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
 			gameplay_render_enemy_attack(&game_context, &game_context.enemy_attack_infos[enemy_info->attack_id]);
 		}
 	} break;

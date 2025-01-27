@@ -58,20 +58,6 @@ typedef struct EnemyInfo {
 	u8 tile;
 } EnemyInfo;
 
-GLOBAL const EnemyInfo enemy_infos[] = {
-	{ "Training Dummy 1", 10, 0, ONEBIT_TILE_TRAINING_DUMMY_1 },
-	{ "Training Dummy 2", 15, 0, ONEBIT_TILE_TRAINING_DUMMY_2 },
-	{ "Instructor", 30, 1, ONEBIT_TILE_INSTRUCTOR },
-	{ "Goblin", 6, 1, ONEBIT_TILE_GOBLIN },
-	{ "Skeleton", 3, 1, ONEBIT_TILE_SKELETON },
-	{ "Mad Wizard", 10, 4, ONEBIT_TILE_MAD_WIZARD },
-	{ "Swarm", 1, 2, ONEBIT_TILE_SWARM },
-	{ "Arachnid Queen", 30, 5, ONEBIT_TILE_ARACHNID_QUEEN },
-	{ "Living Armor", 20, 3, ONEBIT_TILE_LIVING_ARMOR },
-	{ "Demon", 50, 6, ONEBIT_TILE_DEMON }
-};
-#define ENEMY_INFOS_LEN sizeof(enemy_infos) / sizeof(EnemyInfo)
-
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
 	u16 enemy_healths[MAX_ENEMIES_PER_STAGE];
@@ -81,6 +67,7 @@ typedef struct GameContext {
 	const StageInfo *stage_infos;
 	const AttackInfo *attack_infos;
 	const EnemyAttackInfo *enemy_attack_infos;
+	const EnemyInfo *enemy_infos;
 
 	// array len is not required here, so we don't store it.
 	u8 *known_attacks;
@@ -294,8 +281,8 @@ PRIVATE void game_attack_enemy_update(GameContext *context, f32 delta) {
 
 		if (context->enemy_healths[context->enemy_attack_position] > 0) {
 			u8 enemy_id = stage_info->data.battle_data.enemy_ids[context->enemy_attack_position];
-			const EnemyInfo *enemy_info = &enemy_infos[enemy_id];
-			const EnemyAttackInfo *info = &context->enemy_attack_infos[enemy_infos[enemy_id].attack_id];
+			const EnemyInfo *enemy_info = &context->enemy_infos[enemy_id];
+			const EnemyAttackInfo *info = &context->enemy_attack_infos[context->enemy_infos[enemy_id].attack_id];
 			TraceLog(LOG_INFO, "(%d) %s: %s - %u", context->enemy_attack_position, enemy_info->name, info->name, info->damage);
 
 			if (context->player_health >= info->damage) {
@@ -319,7 +306,7 @@ PRIVATE void game_transition_stage_type(GameContext *context) {
 		// prepare the enemies' health values
 		const StageInfo *stage_info = &context->stage_infos[context->stage];
 		for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+			const EnemyInfo *enemy_info = &context->enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
 			context->enemy_healths[i] = enemy_info->health;
 		}
 	} break;
