@@ -33,6 +33,16 @@ GLOBAL const StageInfo gameplay_stage_infos[] = {
 GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 #define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
 
+GLOBAL const EnemyAttackInfo gameplay_enemy_attack_infos[] = {
+	{ "Stare", 0 },
+	{ "Hit", 2 },
+	{ "Scratch", 1 },
+	{ "Wild Swing", 3 },
+	{ "Fireball", 5 },
+	{ "Venom", 10 },
+	{ "Demonic Breath", 7 }
+};
+
 PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
 	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(gameplay_attack_infos));
@@ -49,6 +59,7 @@ PUBLIC void gameplay_init(void) {
 		.attack_infos = gameplay_attack_infos,
 		.attack_infos_len = GAMEPLAY_ATTACK_INFOS_LEN,
 		.known_attacks = gameplay_known_attacks,
+		.enemy_attack_infos = gameplay_enemy_attack_infos
 	};
 
 	app_paused = false;
@@ -98,7 +109,7 @@ PRIVATE const char *get_attack_type_string(AttackType type) {
 PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 	Vector2 position = { 20, 20 };
 	f32 row_height = 20.0f;
-	for (u32 i = 0; i < context->known_attacks_len; i++) {
+	for (u32 i = 0; i < context->known_attacks_count; i++) {
 		const AttackInfo *attack_info = &context->attack_infos[context->known_attacks[i]];
 		char text[24] = { 0 };
 		snprintf(text, sizeof(text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
@@ -345,7 +356,7 @@ PUBLIC void gameplay_render(void) {
 		if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
 			const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
 			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[game_context.enemy_attack_position]];
-			gameplay_render_enemy_attack(&game_context, &enemy_attack_infos[enemy_info->attack_id]);
+			gameplay_render_enemy_attack(&game_context, &game_context.enemy_attack_infos[enemy_info->attack_id]);
 		}
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {

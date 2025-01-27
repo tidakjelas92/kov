@@ -51,17 +51,6 @@ typedef struct EnemyAttackInfo {
 	u16 damage;
 } EnemyAttackInfo;
 
-GLOBAL const EnemyAttackInfo enemy_attack_infos[] = {
-	{ "Stare", 0 },
-	{ "Hit", 2 },
-	{ "Scratch", 1 },
-	{ "Wild Swing", 3 },
-	{ "Fireball", 5 },
-	{ "Venom", 10 },
-	{ "Demonic Breath", 7 }
-};
-#define ENEMY_ATTACK_INFOS_COUNT sizeof(enemy_attack_infos) / sizeof(EnemyAttackInfo)
-
 typedef struct EnemyInfo {
 	const char *name;
 	u16 health;
@@ -91,6 +80,7 @@ typedef struct GameContext {
 	const f32 *input_times;
 	const StageInfo *stage_infos;
 	const AttackInfo *attack_infos;
+	const EnemyAttackInfo *enemy_attack_infos;
 
 	// array len is not required here, so we don't store it.
 	u8 *known_attacks;
@@ -111,7 +101,7 @@ typedef struct GameContext {
 	u8 stage;
 
 	// this is not the array len! this is how many attacks are known at gameplay
-	u8 known_attacks_len;
+	u8 known_attacks_count;
 	u8 attack_infos_len;
 } GameContext;
 
@@ -173,8 +163,8 @@ PUBLIC void game_set_phase(GameContext *context, GamePhase phase) {
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {
 		u8 attack_id = context->stage_infos[context->stage].data.grimoire_data.attack_id;
-		context->known_attacks[context->known_attacks_len] = attack_id;
-		context->known_attacks_len += 1;
+		context->known_attacks[context->known_attacks_count] = attack_id;
+		context->known_attacks_count += 1;
 	} break;
 	default: {
 	} break;
@@ -305,7 +295,7 @@ PRIVATE void game_attack_enemy_update(GameContext *context, f32 delta) {
 		if (context->enemy_healths[context->enemy_attack_position] > 0) {
 			u8 enemy_id = stage_info->data.battle_data.enemy_ids[context->enemy_attack_position];
 			const EnemyInfo *enemy_info = &enemy_infos[enemy_id];
-			const EnemyAttackInfo *info = &enemy_attack_infos[enemy_infos[enemy_id].attack_id];
+			const EnemyAttackInfo *info = &context->enemy_attack_infos[enemy_infos[enemy_id].attack_id];
 			TraceLog(LOG_INFO, "(%d) %s: %s - %u", context->enemy_attack_position, enemy_info->name, info->name, info->damage);
 
 			if (context->player_health >= info->damage) {
