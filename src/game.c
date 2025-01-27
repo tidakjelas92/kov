@@ -27,7 +27,7 @@ typedef enum StageType {
 } StageType;
 
 typedef struct StageInfo {
-	StageType type;
+	u8 type; // enum StageType
 	union {
 		struct {
 			u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
@@ -42,17 +42,17 @@ typedef struct StageInfo {
 typedef struct AttackInfo {
 	const char *name;
 	Sequence sequence;
-	AttackType type;
 	u16 damage;
+	u8 type; // enum AttackType
 } AttackInfo;
 
 // TODO: reference this in game context like stage_infos.
 GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 0 },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 5 },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_SINGLE, 12 },
-	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
-	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
+	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, ATTACK_TYPE_SINGLE },
+	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, 5, ATTACK_TYPE_SINGLE },
+	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, 12, ATTACK_TYPE_SINGLE },
+	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, 4, ATTACK_TYPE_AOE },
+	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, 15, ATTACK_TYPE_SPLASH }
 };
 #define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
 
@@ -105,7 +105,7 @@ typedef struct GameContext {
 
 	f32 elapsed;
 	u16 player_health;
-	GamePhase phase;
+	u8 phase; // enum GamePhase
 
 	u8 input_time_position;
 	u8 input_times_len;
