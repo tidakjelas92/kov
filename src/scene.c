@@ -21,19 +21,19 @@ PUBLIC void scene_set_scene(Scene scene) {
 	// on enter
 	switch (scene_current) {
 	case SCENE_INTRO: {
-		TraceLog(LOG_INFO, "enter intro.");
+		TraceLog(LOG_DEBUG, "enter intro.");
 		intro_init();
 	} break;
 	case SCENE_GAMEPLAY: {
-		TraceLog(LOG_INFO, "enter gameplay.");
+		TraceLog(LOG_DEBUG, "enter gameplay.");
 		gameplay_init();
 	} break;
 	case SCENE_GAME_OVER: {
-		TraceLog(LOG_INFO, "enter game over.");
+		TraceLog(LOG_DEBUG, "enter game over.");
 		game_over_init();
 	} break;
 	case SCENE_ENDING: {
-		TraceLog(LOG_INFO, "enter ending.");
+		TraceLog(LOG_DEBUG, "enter ending.");
 		ending_init();
 	} break;
 	default: {

@@ -262,7 +262,7 @@ PRIVATE void game_attack_player_update(GameContext *context, f32 delta) {
 		} break;
 		}
 
-		TraceLog(LOG_INFO, "player %s - %u", attack_info->name, attack_info->damage);
+		TraceLog(LOG_DEBUG, "player %s - %u", attack_info->name, attack_info->damage);
 		context->attack_position += 1;
 		context->elapsed = 0.0f;
 		PlaySound(resources_error_5_sound);
@@ -286,7 +286,7 @@ PRIVATE void game_attack_enemy_update(GameContext *context, f32 delta) {
 			u8 enemy_id = stage_info->data.battle_data.enemy_ids[context->enemy_attack_position];
 			const EnemyInfo *enemy_info = &context->enemy_infos[enemy_id];
 			const EnemyAttackInfo *info = &context->enemy_attack_infos[context->enemy_infos[enemy_id].attack_id];
-			TraceLog(LOG_INFO, "(%d) %s: %s - %u", context->enemy_attack_position, enemy_info->name, info->name, info->damage);
+			TraceLog(LOG_DEBUG, "(%d) %s: %s - %u", context->enemy_attack_position, enemy_info->name, info->name, info->damage);
 
 			if (context->player_health >= info->damage) {
 				context->player_health -= info->damage;

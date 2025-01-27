@@ -59,11 +59,15 @@ GLOBAL const EnemyInfo gameplay_enemy_infos[] = {
 };
 
 PUBLIC void gameplay_init(void) {
-	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
-	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(gameplay_attack_infos));
-	TraceLog(LOG_INFO, "sizeof StageInfo: %zu", sizeof(StageInfo));
-	TraceLog(LOG_INFO, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
-	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
+	TraceLog(LOG_DEBUG, "sizeof StageInfo: %zu", sizeof(StageInfo));
+	TraceLog(LOG_DEBUG, "sizeof EnemyInfo: %zu", sizeof(EnemyInfo));
+	TraceLog(LOG_DEBUG, "sizeof EnemyAttackInfo: %zu", sizeof(EnemyAttackInfo));
+	TraceLog(LOG_DEBUG, "sizeof GameContext: %zu", sizeof(GameContext));
+	TraceLog(LOG_DEBUG, "sizeof attack_infos: %zu", sizeof(gameplay_attack_infos));
+	TraceLog(LOG_DEBUG, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
+	TraceLog(LOG_DEBUG, "sizeof enemy_infos: %zu", sizeof(gameplay_enemy_infos));
+	TraceLog(LOG_DEBUG, "sizeof enemy_attack_infos: %zu", sizeof(gameplay_enemy_attack_infos));
+	TraceLog(LOG_DEBUG, "total data size: %zu", sizeof(gameplay_attack_infos) + sizeof(gameplay_stage_infos) + sizeof(gameplay_enemy_infos) + sizeof(gameplay_enemy_attack_infos) + sizeof(game_context));
 
 	game_context = (GameContext) {
 		.input_times = gameplay_input_times,
