@@ -5,6 +5,7 @@ GLOBAL GameContext game_context;
 
 GLOBAL const AttackInfo gameplay_attack_infos[] = {
 	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, ATTACK_TYPE_SINGLE },
+	{ "Punch", { 2, 0, 0, 0, 0, 0, 0, 0 }, 1, ATTACK_TYPE_SINGLE },
 	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, 5, ATTACK_TYPE_SINGLE },
 	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, 12, ATTACK_TYPE_SINGLE },
 	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, 4, ATTACK_TYPE_AOE },
@@ -17,22 +18,24 @@ GLOBAL u8 gameplay_known_attacks[GAMEPLAY_ATTACK_INFOS_LEN];
 GLOBAL const StageInfo gameplay_stage_infos[] = {
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 0, 0, 0, 0 }, 1 } } },
-	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 1, 0, 0, 0 }, 3 } } },
-	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 2 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 1, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 2, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 0, 0, 0 }, 2 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 4 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 3, 3, 3, 3, 3 }, 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 5, 0, 0 }, 3 } } },
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 3 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 6, 6, 6, 6, 6 }, 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 7, 0, 0, 0, 0 }, 1 } } },
+	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 8, 8, 0, 0, 0 }, 2 } } },
-	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 4 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 4, 4, 9 }, 5 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 9, 9, 9, 0, 0 }, 3 } } },
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
-GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
+GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f, 8.0f };
 #define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
 
 GLOBAL const EnemyAttackInfo gameplay_enemy_attack_infos[] = {
