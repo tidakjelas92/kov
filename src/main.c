@@ -30,7 +30,7 @@ int main(void) {
 
 	resources_init();
 
-	while (!WindowShouldClose() && !quit_flagged) {
+	while (!WindowShouldClose() && !app_quit) {
 		kov_update();
 		kov_render();
 	}

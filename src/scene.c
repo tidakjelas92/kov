@@ -3,8 +3,6 @@
 #include "game_over.h"
 #include "ending.h"
 
-GLOBAL b8 quit_flagged;
-
 typedef enum Scene {
 	SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_GAME_OVER, SCENE_ENDING
 } Scene;

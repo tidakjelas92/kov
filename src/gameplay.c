@@ -1,97 +1,6 @@
-#define MAX_INPUT_PER_SEQUENCE 8
-#define MAX_ATTACK_PER_TURN 32
-#define MAX_ENEMIES_PER_STAGE 5
-#define MAX_PLAYER_HEALTH 40
-
-// 0: up, 1: right, 2: down, 3: left
-typedef struct Sequence {
-	u8 buffer[MAX_INPUT_PER_SEQUENCE];
-} Sequence;
-
-typedef enum GamePhase {
-	GAME_PHASE_START,
-	GAME_PHASE_PREPARE,
-	GAME_PHASE_INPUT,
-	GAME_PHASE_ATTACK_PLAYER,
-	GAME_PHASE_ATTACK_ENEMY,
-	GAME_PHASE_CHECK,
-	GAME_PHASE_GRIMOIRE_WAIT,
-	GAME_PHASE_GRIMOIRE_CONTINUE,
-} GamePhase;
-
-typedef enum AttackType {
-	ATTACK_TYPE_SINGLE,
-	ATTACK_TYPE_AOE,
-	ATTACK_TYPE_SPLASH
-} AttackType;
-
-typedef enum StageType {
-	STAGE_TYPE_BATTLE,
-	STAGE_TYPE_GRIMOIRE
-} StageType;
-
-typedef struct StageInfo {
-	StageType type;
-	union {
-		struct {
-			u8 enemy_ids[MAX_ENEMIES_PER_STAGE];
-			u8 enemies_len;
-		} battle_data;
-		struct {
-			u8 attack_id;
-		} grimoire_data;
-	} data;
-} StageInfo;
-
-typedef struct AttackInfo {
-	const char *name;
-	Sequence sequence;
-	AttackType type;
-	u16 damage;
-} AttackInfo;
-
-GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 0 },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, ATTACK_TYPE_SINGLE, 5 },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, ATTACK_TYPE_SINGLE, 12 },
-	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, ATTACK_TYPE_AOE, 4 },
-	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, ATTACK_TYPE_SPLASH, 15 }
-};
-#define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
-
-typedef struct GameContext {
-	u8 attack_queue[MAX_ATTACK_PER_TURN];
-	Sequence active_sequence;
-
-	const f32 *input_times;
-	const StageInfo *stage_infos;
-
-	u8 known_attacks[ATTACK_INFOS_COUNT];
-	u16 enemy_healths[MAX_ENEMIES_PER_STAGE];
-
-	f32 elapsed;
-	u16 player_health;
-	GamePhase phase;
-
-	u8 input_time_position;
-	u8 input_times_len;
-
-	u8 active_position;
-	u8 attack_count;
-	u8 attack_position;
-	u8 enemy_attack_position;
-
-	u8 stage_infos_len;
-	u8 stage;
-
-	u8 known_attacks_len;
-} GameContext;
-
 // TODO: allocate context with gameplay arena.
 GLOBAL GameContext game_context;
-GLOBAL b8 paused;
 
-// TODO: separate game data to own file.
 typedef struct EnemyAttackInfo {
 	const char *name;
 	u16 damage;
@@ -149,15 +58,6 @@ GLOBAL const StageInfo gameplay_stage_infos[] = {
 
 GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 #define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
-
-
-PRIVATE void game_prepare_enemies(GameContext *context) {
-	const StageInfo *stage_info = &context->stage_infos[context->stage];
-	for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
-		const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
-		context->enemy_healths[i] = enemy_info->health;
-	}
-}
 
 PUBLIC void game_set_phase(GamePhase phase) {
 	if (game_context.phase == phase) {
@@ -217,7 +117,12 @@ PRIVATE void game_transition_stage_type(GameContext *context) {
 	switch (stage_info->type) {
 	case STAGE_TYPE_BATTLE: {
 		game_set_phase(GAME_PHASE_PREPARE);
-		game_prepare_enemies(context);
+		// prepare the enemies' health values
+		const StageInfo *stage_info = &context->stage_infos[context->stage];
+		for (u32 i = 0; i < stage_info->data.battle_data.enemies_len; i++) {
+			const EnemyInfo *enemy_info = &enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
+			context->enemy_healths[i] = enemy_info->health;
+		}
 	} break;
 	case STAGE_TYPE_GRIMOIRE: {
 		game_set_phase(GAME_PHASE_GRIMOIRE_WAIT);
@@ -240,47 +145,9 @@ PUBLIC void gameplay_init(void) {
 		.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN,
 	};
 
-	paused = false;
+	app_paused = false;
 
 	game_transition_stage_type(&game_context);
-}
-
-PRIVATE u8 sequence_get_len(const Sequence *s) {
-	u8 len = 0;
-	for (u32 i = 0; i < MAX_INPUT_PER_SEQUENCE; i++) {
-		if (s->buffer[i] == 0) {
-			break;
-		} else {
-			len += 1;
-		}
-	}
-
-	return len;
-}
-
-PRIVATE b8 sequence_compare(const Sequence *a, const Sequence *b) {
-	for (u32 i = 0; i < MAX_INPUT_PER_SEQUENCE; i++) {
-		if (a->buffer[i] == 0 && b->buffer[i] == 0) {
-			return true;
-		} else if (a->buffer[i] != b->buffer[i]) {
-			return false;
-		}
-	}
-
-	return true;
-}
-
-PRIVATE b8 sequence_try_get_sequence_idx(const Sequence *seq, u8 *result) {
-	b8 found = false;
-	for (u32 i = 0; i < ATTACK_INFOS_COUNT; i++) {
-		if (sequence_compare(&attack_infos[i].sequence, seq)) {
-			*result = i;
-			found = true;
-			break;
-		}
-	}
-
-	return found;
 }
 
 PRIVATE void game_add_input(u8 input) {
@@ -300,7 +167,7 @@ PRIVATE void game_input_update(f32 delta) {
 	if (game_context.elapsed >= game_context.input_times[game_context.input_time_position]) {
 		game_set_phase(GAME_PHASE_ATTACK_PLAYER);
 	} else {
-		if (game_context.active_position < MAX_INPUT_PER_SEQUENCE && game_context.attack_count < MAX_ATTACK_PER_TURN) {
+		if (game_context.active_position < SEQUENCE_MAX_INPUT && game_context.attack_count < MAX_ATTACK_PER_TURN) {
 			if (IsKeyPressed(KEY_W)) {
 				game_add_input(1);
 				PlaySound(resources_click_1_sound);
@@ -318,7 +185,7 @@ PRIVATE void game_input_update(f32 delta) {
 
 		if (IsKeyPressed(KEY_SPACE)) {
 			u8 idx = 0;
-			if (sequence_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
+			if (game_try_get_sequence_idx(&game_context.active_sequence, &idx)) {
 				if (idx == 0) {
 					PlaySound(resources_error_5_sound);
 				}
@@ -466,11 +333,11 @@ PRIVATE void game_check_update(GameContext *context) {
 
 PUBLIC void gameplay_update(f32 delta) {
 	if (IsKeyPressed(KEY_ESCAPE)) {
-		paused = !paused;
+		app_paused = !app_paused;
 		PlaySound(resources_switch_2_sound);
 	}
 
-	if (paused) {
+	if (app_paused) {
 		if (IsKeyPressed(KEY_Q)) {
 			scene_set_scene(SCENE_INTRO);
 		}
@@ -761,7 +628,7 @@ PUBLIC void gameplay_render(void) {
 		gameplay_render_active_sequence(&game_context);
 		gameplay_render_attack_queue(&game_context);
 		gameplay_render_input_time(&game_context);
-		if (!paused) {
+		if (!app_paused) {
 			ui_draw_space_confirm(THEME_BLACK);
 		}
 	} break;
@@ -776,7 +643,7 @@ PUBLIC void gameplay_render(void) {
 		}
 	} break;
 	case GAME_PHASE_GRIMOIRE_CONTINUE: {
-		if (!paused) {
+		if (!app_paused) {
 			ui_draw_space_confirm(THEME_BLACK);
 		}
 	} break;
@@ -866,7 +733,7 @@ PUBLIC void gameplay_render(void) {
 		}
 	}
 
-	if (paused) {
+	if (app_paused) {
 		ui_draw_pause_menu();
 	} else {
 		Vector2 esc_size = { 32, 32 };

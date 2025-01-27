@@ -51,7 +51,7 @@ PUBLIC void intro_update(f32 delta) {
 			PlaySound(resources_select_2_sound);
 			scene_set_scene(SCENE_GAMEPLAY);
 		} else if (IsKeyPressed(KEY_Q)) {
-			quit_flagged = true;
+			app_quit = true;
 		}
 	} break;
 	default: {

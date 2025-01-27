@@ -12,11 +12,16 @@
 #include <raymath.h>
 
 #include "types.h"
-#include "mem.c"
+// #include "mem.c"
+
+#include "app.c"
 
 #include "resources.c"
 #include "theme.c"
 #include "ui.c"
+
+#include "sequence.c"
+#include "game.c"
 
 #include "scene.c"
 #include "intro.c"
