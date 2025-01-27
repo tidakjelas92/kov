@@ -46,16 +46,6 @@ typedef struct AttackInfo {
 	u8 type; // enum AttackType
 } AttackInfo;
 
-// TODO: reference this in game context like stage_infos.
-GLOBAL const AttackInfo attack_infos[] = {
-	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, ATTACK_TYPE_SINGLE },
-	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, 5, ATTACK_TYPE_SINGLE },
-	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, 12, ATTACK_TYPE_SINGLE },
-	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, 4, ATTACK_TYPE_AOE },
-	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, 15, ATTACK_TYPE_SPLASH }
-};
-#define ATTACK_INFOS_COUNT sizeof(attack_infos) / sizeof(AttackInfo)
-
 typedef struct EnemyAttackInfo {
 	const char *name;
 	u16 damage;
@@ -95,13 +85,15 @@ GLOBAL const EnemyInfo enemy_infos[] = {
 
 typedef struct GameContext {
 	u8 attack_queue[MAX_ATTACK_PER_TURN];
+	u16 enemy_healths[MAX_ENEMIES_PER_STAGE];
 	Sequence active_sequence;
 
 	const f32 *input_times;
 	const StageInfo *stage_infos;
+	const AttackInfo *attack_infos;
 
-	u8 known_attacks[ATTACK_INFOS_COUNT];
-	u16 enemy_healths[MAX_ENEMIES_PER_STAGE];
+	// array len is not required here, so we don't store it.
+	u8 *known_attacks;
 
 	f32 elapsed;
 	u16 player_health;
@@ -118,13 +110,15 @@ typedef struct GameContext {
 	u8 stage_infos_len;
 	u8 stage;
 
+	// this is not the array len! this is how many attacks are known at gameplay
 	u8 known_attacks_len;
+	u8 attack_infos_len;
 } GameContext;
 
-PUBLIC b8 game_try_get_sequence_idx(const Sequence *seq, u8 *result) {
+PUBLIC b8 game_try_get_sequence_idx(const GameContext *context, const Sequence *seq, u8 *result) {
 	b8 found = false;
-	for (u32 i = 0; i < ATTACK_INFOS_COUNT; i++) {
-		if (sequence_compare(&attack_infos[i].sequence, seq)) {
+	for (u32 i = 0; i < context->attack_infos_len; i++) {
+		if (sequence_compare(&context->attack_infos[i].sequence, seq)) {
 			*result = i;
 			found = true;
 			break;
@@ -215,7 +209,7 @@ PRIVATE void game_input_update(GameContext *context, f32 delta) {
 
 		if (IsKeyPressed(KEY_SPACE)) {
 			u8 idx = 0;
-			if (game_try_get_sequence_idx(&context->active_sequence, &idx)) {
+			if (game_try_get_sequence_idx(context, &context->active_sequence, &idx)) {
 				if (idx == 0) {
 					PlaySound(resources_error_5_sound);
 				}
@@ -240,7 +234,7 @@ PRIVATE void game_attack_player_update(GameContext *context, f32 delta) {
 		}
 
 		const StageInfo *stage_info = &context->stage_infos[context->stage];
-		const AttackInfo *attack_info = &attack_infos[context->attack_queue[context->attack_position]];
+		const AttackInfo *attack_info = &context->attack_infos[context->attack_queue[context->attack_position]];
 
 		switch (attack_info->type) {
 		case ATTACK_TYPE_SINGLE: {

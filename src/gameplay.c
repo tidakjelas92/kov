@@ -1,6 +1,17 @@
 // TODO: allocate context with gameplay arena.
 GLOBAL GameContext game_context;
 
+GLOBAL const AttackInfo gameplay_attack_infos[] = {
+	{ "??", { 0, 0, 0, 0, 0, 0, 0, 0 }, 0, ATTACK_TYPE_SINGLE },
+	{ "Slash", { 1, 2, 2, 0, 0, 0, 0, 0 }, 5, ATTACK_TYPE_SINGLE },
+	{ "Cross Slash", { 1, 2, 2, 1, 4, 4, 0, 0 }, 12, ATTACK_TYPE_SINGLE },
+	{ "Twirl", { 2, 3, 4, 2, 0, 0, 0, 0 }, 4, ATTACK_TYPE_AOE },
+	{ "Spear Thrust", { 2, 2, 2, 2, 2, 2, 2, 2 }, 15, ATTACK_TYPE_SPLASH }
+};
+#define GAMEPLAY_ATTACK_INFOS_LEN sizeof(gameplay_attack_infos) / sizeof(AttackInfo)
+
+GLOBAL u8 gameplay_known_attacks[GAMEPLAY_ATTACK_INFOS_LEN];
+
 GLOBAL const StageInfo gameplay_stage_infos[] = {
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 1 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 0, 0, 0, 0, 0 }, 1 } } },
@@ -24,7 +35,7 @@ GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f };
 
 PUBLIC void gameplay_init(void) {
 	TraceLog(LOG_INFO, "sizeof GamePhase: %zu", sizeof(GamePhase));
-	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(attack_infos));
+	TraceLog(LOG_INFO, "sizeof attack_infos: %zu", sizeof(gameplay_attack_infos));
 	TraceLog(LOG_INFO, "sizeof StageInfo: %zu", sizeof(StageInfo));
 	TraceLog(LOG_INFO, "sizeof stage_infos: %zu", sizeof(gameplay_stage_infos));
 	TraceLog(LOG_INFO, "sizeof GameContext: %zu", sizeof(GameContext));
@@ -35,6 +46,9 @@ PUBLIC void gameplay_init(void) {
 		.player_health = MAX_PLAYER_HEALTH,
 		.stage_infos = gameplay_stage_infos,
 		.stage_infos_len = GAMEPLAY_STAGE_INFOS_LEN,
+		.attack_infos = gameplay_attack_infos,
+		.attack_infos_len = GAMEPLAY_ATTACK_INFOS_LEN,
+		.known_attacks = gameplay_known_attacks,
 	};
 
 	app_paused = false;
@@ -85,7 +99,7 @@ PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 	Vector2 position = { 20, 20 };
 	f32 row_height = 20.0f;
 	for (u32 i = 0; i < context->known_attacks_len; i++) {
-		const AttackInfo *attack_info = &attack_infos[context->known_attacks[i]];
+		const AttackInfo *attack_info = &context->attack_infos[context->known_attacks[i]];
 		char text[24] = { 0 };
 		snprintf(text, sizeof(text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
 	Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize, 0.0f);
@@ -191,7 +205,7 @@ PRIVATE void gameplay_render_active_sequence(GameContext *context) {
 
 PRIVATE void gameplay_render_attack_queue(GameContext *context) {
 	if (context->attack_count > 0) {
-		const AttackInfo *attack_info = &attack_infos[context->attack_queue[context->attack_count - 1]];
+		const AttackInfo *attack_info = &context->attack_infos[context->attack_queue[context->attack_count - 1]];
 		char text[24] = { 0 };
 		snprintf(text, sizeof(text), "(%d) %s", context->attack_count, attack_info->name);
 		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, text, resources_pixel_operator_font.baseSize * 2.0f, 2.0f);
@@ -325,7 +339,7 @@ PUBLIC void gameplay_render(void) {
 		}
 	} break;
 	case GAME_PHASE_ATTACK_PLAYER: {
-		gameplay_render_current_attack(&game_context, &attack_infos[game_context.attack_queue[game_context.attack_position]]);
+		gameplay_render_current_attack(&game_context, &game_context.attack_infos[game_context.attack_queue[game_context.attack_position]]);
 	} break;
 	case GAME_PHASE_ATTACK_ENEMY: {
 		if (game_context.enemy_healths[game_context.enemy_attack_position] > 0) {
@@ -383,7 +397,7 @@ PUBLIC void gameplay_render(void) {
 		);
 
 		const StageInfo *stage_info = &game_context.stage_infos[game_context.stage];
-		const AttackInfo *attack_info = &attack_infos[stage_info->data.grimoire_data.attack_id];
+		const AttackInfo *attack_info = &game_context.attack_infos[stage_info->data.grimoire_data.attack_id];
 		char name_text[24] = { 0 };
 		snprintf(name_text, sizeof(name_text), "%s (%s)", attack_info->name, get_attack_type_string(attack_info->type));
 		Vector2 name_text_size = MeasureTextEx(resources_pixel_operator_font, name_text, resources_pixel_operator_font.baseSize * 2.0f, 2.0f);
