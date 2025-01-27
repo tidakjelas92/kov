@@ -131,7 +131,7 @@ PRIVATE const char *get_attack_type_string(AttackType type) {
 
 PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 	Vector2 position = { 20, 20 };
-	f32 row_height = 20.0f;
+	f32 row_height = 15.0f;
 	for (u32 i = 0; i < context->known_attacks_count; i++) {
 		const AttackInfo *attack_info = &context->attack_infos[context->known_attacks[i]];
 		char text[24] = { 0 };
