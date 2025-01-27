@@ -26,6 +26,9 @@ PUBLIC b8 sequence_compare(const Sequence *a, const Sequence *b) {
 			break;
 		} else if (a->buffer[i] != b->buffer[i]) {
 			break;
+		} else if (i == SEQUENCE_MAX_INPUT - 1) {
+			result = true;
+			break;
 		}
 	}
 
