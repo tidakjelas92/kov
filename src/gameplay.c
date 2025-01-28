@@ -49,16 +49,16 @@ GLOBAL const EnemyAttackInfo gameplay_enemy_attack_infos[] = {
 };
 
 GLOBAL const EnemyInfo gameplay_enemy_infos[] = {
-	{ "Training Dummy 1", 10, 0, ONEBIT_TILE_TRAINING_DUMMY_1 },
-	{ "Training Dummy 2", 15, 0, ONEBIT_TILE_TRAINING_DUMMY_2 },
-	{ "Instructor", 30, 1, ONEBIT_TILE_INSTRUCTOR },
-	{ "Goblin", 6, 1, ONEBIT_TILE_GOBLIN },
-	{ "Skeleton", 3, 1, ONEBIT_TILE_SKELETON },
-	{ "Mad Wizard", 10, 4, ONEBIT_TILE_MAD_WIZARD },
-	{ "Swarm", 1, 2, ONEBIT_TILE_SWARM },
-	{ "Arachnid Queen", 30, 5, ONEBIT_TILE_ARACHNID_QUEEN },
-	{ "Living Armor", 20, 3, ONEBIT_TILE_LIVING_ARMOR },
-	{ "Demon", 50, 6, ONEBIT_TILE_DEMON }
+	{ "Training Dummy 1", 10, 0, RESOURCES_ATLAS_TILE_TRAINING_DUMMY_1 },
+	{ "Training Dummy 2", 15, 0, RESOURCES_ATLAS_TILE_TRAINING_DUMMY_2 },
+	{ "Instructor", 30, 1, RESOURCES_ATLAS_TILE_INSTRUCTOR },
+	{ "Goblin", 6, 1, RESOURCES_ATLAS_TILE_GOBLIN },
+	{ "Skeleton", 3, 1, RESOURCES_ATLAS_TILE_SKELETON },
+	{ "Mad Wizard", 10, 4, RESOURCES_ATLAS_TILE_MAD_WIZARD },
+	{ "Swarm", 1, 2, RESOURCES_ATLAS_TILE_SWARM },
+	{ "Arachnid Queen", 30, 5, RESOURCES_ATLAS_TILE_ARACHNID_QUEEN },
+	{ "Living Armor", 20, 3, RESOURCES_ATLAS_TILE_LIVING_ARMOR },
+	{ "Demon", 50, 6, RESOURCES_ATLAS_TILE_DEMON }
 };
 
 PUBLIC void gameplay_init(void) {
@@ -156,9 +156,9 @@ PRIVATE void gameplay_render_known_attacks(GameContext *context) {
 				arrow_dst_size.y
 			};
 			DrawTexturePro(
-				resources_prompt_texture,
+				resources_atlas_texture,
 				// basically works because the value is literally the same.
-				prompt_tiles[sequence->buffer[j] - 1],
+				resources_atlas_rects[sequence->buffer[j] - 1],
 				arrow_dst_rect,
 				Vector2Zero(), 0.0f,
 				THEME_BLACK
@@ -178,8 +178,8 @@ PRIVATE void gameplay_render_enemies(GameContext *context) {
 		if (context->enemy_healths[i] > 0) {
 			const EnemyInfo *enemy_info = &context->enemy_infos[stage_info->data.battle_data.enemy_ids[i]];
 			DrawTexturePro(
-				resources_onebit_texture,
-				onebit_tiles[enemy_info->tile],
+				resources_atlas_texture,
+				resources_atlas_rects[enemy_info->tile],
 				(Rectangle){ position.x, position.y, size.x, size.y },
 				Vector2Zero(), 0.0f,
 				THEME_BLACK
@@ -227,9 +227,9 @@ PRIVATE void gameplay_render_active_sequence(GameContext *context) {
 			arrow_dst_size.y
 		};
 		DrawTexturePro(
-			resources_prompt_texture,
+			resources_atlas_texture,
 			// basically works because the value is literally the same.
-			prompt_tiles[context->active_sequence.buffer[i] - 1],
+			resources_atlas_rects[context->active_sequence.buffer[i] - 1],
 			arrow_dst_rect,
 			Vector2Zero(), 0.0f,
 			THEME_BLACK
@@ -331,8 +331,8 @@ PUBLIC void gameplay_render(void) {
 	);
 
 	DrawTexturePro(
-		resources_onebit_texture,
-		onebit_tiles[ONEBIT_TILE_PLAYER],
+		resources_atlas_texture,
+		resources_atlas_rects[RESOURCES_ATLAS_TILE_PLAYER],
 		(Rectangle){ GetScreenWidth() / 2.0f - 300.0f, 300.0f, 32.0f, 32.0f },
 		Vector2Zero(), 0.0f,
 		THEME_BLACK
@@ -410,8 +410,8 @@ PUBLIC void gameplay_render(void) {
 			grim_size.y
 		};
 		DrawTexturePro(
-			resources_onebit_texture,
-			onebit_tiles[ONEBIT_TILE_GRIMOIRE],
+			resources_atlas_texture,
+			resources_atlas_rects[RESOURCES_ATLAS_TILE_GRIMOIRE],
 			grim_dst_rect,
 			Vector2Zero(), 0.0f,
 			THEME_WHITE
@@ -463,9 +463,9 @@ PUBLIC void gameplay_render(void) {
 				arrow_dst_size.y
 			};
 			DrawTexturePro(
-				resources_prompt_texture,
+				resources_atlas_texture,
 				// basically works because the value is literally the same.
-				prompt_tiles[sequence->buffer[i] - 1],
+				resources_atlas_rects[sequence->buffer[i] - 1],
 				arrow_dst_rect,
 				Vector2Zero(), 0.0f,
 				THEME_WHITE
@@ -479,8 +479,8 @@ PUBLIC void gameplay_render(void) {
 		Vector2 esc_size = { 32, 32 };
 		Rectangle esc_dst_rect = { GetScreenWidth() - esc_size.x - 5.0f, 5.0f, esc_size.x, esc_size.y };
 		DrawTexturePro(
-			resources_prompt_texture,
-			prompt_tiles[PROMPT_TILE_ESCAPE],
+			resources_atlas_texture,
+			resources_atlas_rects[RESOURCES_ATLAS_TILE_ESCAPE],
 			esc_dst_rect,
 			Vector2Zero(), 0.0f,
 			THEME_BLACK

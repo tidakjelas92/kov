@@ -101,8 +101,8 @@ PUBLIC void intro_render(void) {
 		Vector2 q_size = { 32.0f, 32.0f };
 		Vector2 quit_position = { 50.0f, GetScreenHeight() - q_size.y - 30.0f };
 		DrawTexturePro(
-			resources_prompt_texture,
-			prompt_tiles[PROMPT_TILE_Q],
+			resources_atlas_texture,
+			resources_atlas_rects[RESOURCES_ATLAS_TILE_Q],
 			(Rectangle){
 				quit_position.x - q_size.x / 2.0f,
 				quit_position.y,
@@ -130,8 +130,8 @@ PUBLIC void intro_render(void) {
 			GetScreenHeight() - q_size.y - 30.0f
 		};
 		DrawTexturePro(
-			resources_prompt_texture,
-			prompt_tiles[PROMPT_TILE_C],
+			resources_atlas_texture,
+			resources_atlas_rects[RESOURCES_ATLAS_TILE_C],
 			(Rectangle){
 				credits_position.x - q_size.x / 2.0f,
 				credits_position.y,

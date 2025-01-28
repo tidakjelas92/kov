@@ -34,8 +34,8 @@ PUBLIC void ui_draw_pause_menu(void) {
 		esc_size.x, esc_size.y
 	};
 	DrawTexturePro(
-		resources_prompt_texture,
-		prompt_tiles[PROMPT_TILE_ESCAPE],
+		resources_atlas_texture,
+		resources_atlas_rects[RESOURCES_ATLAS_TILE_ESCAPE],
 		esc_dst_rect,
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
@@ -65,8 +65,8 @@ PUBLIC void ui_draw_pause_menu(void) {
 		q_size.y
 	};
 	DrawTexturePro(
-		resources_prompt_texture,
-		prompt_tiles[PROMPT_TILE_Q],
+		resources_atlas_texture,
+		resources_atlas_rects[RESOURCES_ATLAS_TILE_Q],
 		q_dst_rect,
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
@@ -99,8 +99,8 @@ PUBLIC void ui_draw_space_confirm(Color color) {
 	}
 
 	DrawTexturePro(
-		resources_prompt_texture,
-		prompt_tiles[PROMPT_TILE_SPACE],
+		resources_atlas_texture,
+		resources_atlas_rects[RESOURCES_ATLAS_TILE_SPACE],
 		space_dst_rect,
 		Vector2Zero(), 0.0f,
 		color
