@@ -31,7 +31,7 @@ GLOBAL const StageInfo gameplay_stage_infos[] = {
 	{ .type = STAGE_TYPE_GRIMOIRE, .data = { .grimoire_data = { 5 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 8, 8, 0, 0, 0 }, 2 } } },
 	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 4, 4, 4, 4, 9 }, 5 } } },
-	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 9, 9, 9, 0, 0 }, 3 } } },
+	{ .type = STAGE_TYPE_BATTLE, .data = { .battle_data = { { 9, 9, 0, 0, 0 }, 2 } } },
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
