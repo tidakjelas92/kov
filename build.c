@@ -16,6 +16,7 @@
 
 #include "app.c"
 
+#include "pixel_operator_font.c"
 #include "resources.c"
 #include "theme.c"
 #include "ui.c"

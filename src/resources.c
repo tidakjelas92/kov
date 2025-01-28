@@ -17,7 +17,7 @@ PUBLIC void resources_init(void) {
 	resources_prompt_texture = LoadTexture("assets/sprites/tilemap_white_packed.png");
 	resources_onebit_texture = LoadTexture("assets/sprites/monochrome-transparent_packed.png");
 	resources_pixelplay_font = LoadFont("assets/fonts/pixelplay.png");
-	resources_pixel_operator_font = LoadFontEx("assets/fonts/PixelOperator.ttf", 16, NULL, 0);
+	resources_pixel_operator_font = pixel_operator_font_load();
 	resources_select_2_sound = LoadSound("assets/sfx/select_002.ogg");
 	resources_error_5_sound = LoadSound("assets/sfx/error_005.ogg");
 	resources_switch_2_sound = LoadSound("assets/sfx/switch_002.ogg");
@@ -26,10 +26,6 @@ PUBLIC void resources_init(void) {
 	resources_click_2_sound = LoadSound("assets/sfx/click_002.ogg");
 	resources_click_3_sound = LoadSound("assets/sfx/click_003.ogg");
 	resources_click_4_sound = LoadSound("assets/sfx/click_004.ogg");
-}
-
-PUBLIC void resources_unload(void) {
-	UnloadFont(resources_pixelplay_font);
 }
 
 typedef enum PromptTile {

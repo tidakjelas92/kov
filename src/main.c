@@ -42,8 +42,6 @@ int main(void) {
 		kov_render();
 	}
 
-	resources_unload();
-
 	CloseAudioDevice();
 	CloseWindow();
 	return 0;

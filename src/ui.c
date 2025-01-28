@@ -40,7 +40,7 @@ PUBLIC void ui_draw_pause_menu(void) {
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
 	);
-	const char *resume_text = "Resume";
+	const char *resume_text = "RESUME";
 	Vector2 resume_text_size = MeasureTextEx(resources_pixel_operator_font, resume_text, resources_pixel_operator_font.baseSize, 0.0f);
 	DrawTextEx(
 		resources_pixel_operator_font,
@@ -71,7 +71,7 @@ PUBLIC void ui_draw_pause_menu(void) {
 		Vector2Zero(), 0.0f,
 		THEME_WHITE
 	);
-	const char *quit_text = "Quit";
+	const char *quit_text = "QUIT";
 	Vector2 quit_text_size = MeasureTextEx(resources_pixel_operator_font, quit_text, resources_pixel_operator_font.baseSize, 0.0f);
 	DrawTextEx(
 		resources_pixel_operator_font,

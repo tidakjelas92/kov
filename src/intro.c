@@ -111,7 +111,7 @@ PUBLIC void intro_render(void) {
 			Vector2Zero(), 0.0f,
 			THEME_BLACK
 		);
-		const char *quit_text = "Quit";
+		const char *quit_text = "QUIT";
 		Vector2 quit_text_size = MeasureTextEx(resources_pixel_operator_font, quit_text, resources_pixel_operator_font.baseSize, 0.0f);
 		DrawTextEx(
 			resources_pixel_operator_font,
