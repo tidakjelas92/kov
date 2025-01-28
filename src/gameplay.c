@@ -258,7 +258,7 @@ PRIVATE void gameplay_render_attack_queue(GameContext *context) {
 
 PRIVATE void gameplay_render_current_attack(const GameContext *context, const AttackInfo *attack_info) {
 	if (context->attack_count > 0 && context->attack_position < context->attack_count) {
-		Vector2 panel_size = { 200, 50 };
+		Vector2 panel_size = { 250, 50 };
 		Rectangle panel_rect = {
 			GetScreenWidth() / 2.0f - panel_size.x / 2.0f,
 			150,
@@ -267,7 +267,7 @@ PRIVATE void gameplay_render_current_attack(const GameContext *context, const At
 		};
 		DrawRectangle(panel_rect.x - 5, panel_rect.y - 5, panel_size.x + 10, panel_size.y + 10, THEME_BLACK);
 
-		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 2.0f);
+		Vector2 text_size = MeasureTextEx(resources_pixel_operator_font, attack_info->name, resources_pixel_operator_font.baseSize * 3.0f, 0.0f);
 		DrawTextEx(
 			resources_pixel_operator_font,
 			attack_info->name,
