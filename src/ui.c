@@ -87,7 +87,6 @@ PUBLIC void ui_draw_pause_menu(void) {
 
 PUBLIC void ui_draw_space_confirm(Color color) {
 	Vector2 space_dst_size = { 96.0f, 32.0f };
-	f32 text_spacing = 3.0f;
 	Rectangle space_dst_rect = {
 		GetScreenWidth() / 2.0f - space_dst_size.x / 2.0f,
 		GetScreenHeight() - space_dst_size.y - 30.0f,
@@ -108,15 +107,17 @@ PUBLIC void ui_draw_space_confirm(Color color) {
 	);
 
 	const char *continue_text = "CONFIRM";
-	Vector2 continue_text_size = MeasureTextEx(resources_pixelplay_font, continue_text, resources_pixelplay_font.baseSize, text_spacing);
+	Vector2 continue_text_size = MeasureTextEx(
+		resources_pixel_operator_font, continue_text, resources_pixel_operator_font.baseSize, 0.0f
+	);
 	DrawTextEx(
-		resources_pixelplay_font,
+		resources_pixel_operator_font,
 		continue_text,
 		(Vector2){
 			GetScreenWidth() / 2.0f - continue_text_size.x / 2.0f,
 			space_dst_rect.y - continue_text_size.y
 		},
-		resources_pixelplay_font.baseSize, text_spacing,
+		resources_pixel_operator_font.baseSize, 0.0f,
 		color
 	);
 }

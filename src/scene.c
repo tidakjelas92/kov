@@ -2,9 +2,10 @@
 #include "gameplay.h"
 #include "game_over.h"
 #include "ending.h"
+#include "credits.h"
 
 typedef enum Scene {
-	SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_GAME_OVER, SCENE_ENDING
+	SCENE_START, SCENE_INTRO, SCENE_GAMEPLAY, SCENE_GAME_OVER, SCENE_ENDING, SCENE_CREDITS
 } Scene;
 
 GLOBAL Scene scene_current;
@@ -58,6 +59,9 @@ PUBLIC void scene_update(f32 delta) {
 	case SCENE_ENDING: {
 		ending_update(delta);
 	} break;
+	case SCENE_CREDITS: {
+		credits_update();
+	} break;
 	default: {
 	} break;
 	}
@@ -77,6 +81,9 @@ PUBLIC void scene_render(void) {
 	case SCENE_ENDING: {
 		ending_render();
 	} break;
+	case SCENE_CREDITS: {
+		credits_render();
+	}
 	default: {
 	} break;
 	}

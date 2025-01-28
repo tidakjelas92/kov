@@ -35,7 +35,8 @@ typedef enum PromptTile {
 	PROMPT_TILE_ARROW_LEFT,
 	PROMPT_TILE_SPACE,
 	PROMPT_TILE_ESCAPE,
-	PROMPT_TILE_Q
+	PROMPT_TILE_Q,
+	PROMPT_TILE_C
 } PromptTile;
 
 // access with PromptTile as index
@@ -46,7 +47,8 @@ GLOBAL const Rectangle prompt_tiles[] = {
 	{ 528, 192, 16, 16 },
 	{ 496, 224, 48, 16 },
 	{ 272, 128, 16, 16 },
-	{ 272, 160, 16, 16 }
+	{ 272, 160, 16, 16 },
+	{ 336, 192, 16, 16 }
 };
 
 typedef enum OnebitTile {

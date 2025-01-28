@@ -52,6 +52,8 @@ PUBLIC void intro_update(f32 delta) {
 			scene_set_scene(SCENE_GAMEPLAY);
 		} else if (IsKeyPressed(KEY_Q)) {
 			app_quit = true;
+		} else if (IsKeyPressed(KEY_C)) {
+			scene_set_scene(SCENE_CREDITS);
 		}
 	} break;
 	default: {
@@ -98,16 +100,15 @@ PUBLIC void intro_render(void) {
 
 		Vector2 q_size = { 32.0f, 32.0f };
 		Vector2 quit_position = { 50.0f, GetScreenHeight() - q_size.y - 30.0f };
-		Rectangle q_dst_rect = {
-			quit_position.x - q_size.x / 2.0f,
-			quit_position.y,
-			q_size.x,
-			q_size.y
-		};
 		DrawTexturePro(
 			resources_prompt_texture,
 			prompt_tiles[PROMPT_TILE_Q],
-			q_dst_rect,
+			(Rectangle){
+				quit_position.x - q_size.x / 2.0f,
+				quit_position.y,
+				q_size.x,
+				q_size.y
+			},
 			Vector2Zero(), 0.0f,
 			THEME_BLACK
 		);
@@ -119,6 +120,35 @@ PUBLIC void intro_render(void) {
 			(Vector2){
 				quit_position.x - quit_text_size.x / 2.0f,
 				quit_position.y + q_size.y
+			},
+			resources_pixel_operator_font.baseSize, 0.0f,
+			THEME_BLACK
+		);
+
+		Vector2 credits_position = {
+			GetScreenWidth() - 50.0f,
+			GetScreenHeight() - q_size.y - 30.0f
+		};
+		DrawTexturePro(
+			resources_prompt_texture,
+			prompt_tiles[PROMPT_TILE_C],
+			(Rectangle){
+				credits_position.x - q_size.x / 2.0f,
+				credits_position.y,
+				q_size.x,
+				q_size.y
+			},
+			Vector2Zero(), 0.0f,
+			THEME_BLACK
+		);
+		const char *credits_text = "CREDITS";
+		Vector2 credits_text_size = MeasureTextEx(resources_pixel_operator_font, credits_text, resources_pixel_operator_font.baseSize, 0.0f);
+		DrawTextEx(
+			resources_pixel_operator_font,
+			credits_text,
+			(Vector2){
+				credits_position.x - credits_text_size.x / 2.0f,
+				credits_position.y + q_size.y
 			},
 			resources_pixel_operator_font.baseSize, 0.0f,
 			THEME_BLACK

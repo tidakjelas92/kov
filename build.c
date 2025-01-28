@@ -29,5 +29,6 @@
 #include "ending.c"
 #include "gameplay.c"
 #include "game_over.c"
+#include "credits.c"
 
 #include "main.c"
