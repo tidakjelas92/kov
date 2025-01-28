@@ -35,7 +35,7 @@ GLOBAL const StageInfo gameplay_stage_infos[] = {
 };
 #define GAMEPLAY_STAGE_INFOS_LEN sizeof(gameplay_stage_infos) / sizeof(StageInfo)
 
-GLOBAL const f32 gameplay_input_times[] = { 4.0f, 3.5f, 1.5f, 2.5f, 8.0f };
+GLOBAL const f32 gameplay_input_times[] = { 5.0f, 4.5f, 2.5f, 3.5f, 8.0f };
 #define GAMEPLAY_INPUT_TIMES_LEN sizeof(gameplay_input_times) / sizeof(f32)
 
 GLOBAL const EnemyAttackInfo gameplay_enemy_attack_infos[] = {
