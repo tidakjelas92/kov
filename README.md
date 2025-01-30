@@ -34,7 +34,6 @@ Steps:
 ## Credits
 
 - [Raylib 5.5](https://github.com/raysan5/raylib)
-- [Raygui 4.0](https://github.com/raysan5/raygui)
 - [Kenney's 1bit input prompts](https://kenney.nl/assets/1-bit-input-prompts-pixel-16)
 - [Kenney interface sounds](https://kenney.nl/assets/interface-sounds)
 - [Kenney's Monochrome RPG](https://kenney.nl/assets/monochrome-rpg)
