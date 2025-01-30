@@ -126,6 +126,10 @@ PRIVATE const char *get_attack_type_string(AttackType type) {
 	case ATTACK_TYPE_SPLASH: {
 		return "Splash";
 	} break;
+	default: {
+		assert(false && "attack type not handled yet.");
+		return "";
+	} break;
 	}
 }
 
