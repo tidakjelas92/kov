@@ -75,7 +75,7 @@ if "%main%"=="1" (
 
 	if "%release%"=="1" (
 		echo info: release build mode
-		set cflags=%common_cflags% /O1 /GL
+		set cflags=%common_cflags% /O1 /GL /DNDEBUG
 		set lflags=!common_lflags! /LTCG
 	) else (
 		echo info: debug build mode
