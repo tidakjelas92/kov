@@ -30,15 +30,23 @@ build raylib main release
 
 ### Linux
 
+> [!NOTE]
+> Linux build is only tested on X11. For wayland, probably would need to tinker
+> with the compile definition a bit, idk.
+
 Requirements:
 - llvm
 
-Steps:
-1. `cd` to `vendor/raylib/src`
-2. `make`
-3. `cd` back to project root.
-3. Run `build.sh`
+```bash
+# first time building, build raylib too.
+./build.sh raylib main
 
+# subsequent builds only need to build the default target (main)
+./build.sh
+
+# release build
+./build.sh raylib main release
+```
 
 ## Credits
 

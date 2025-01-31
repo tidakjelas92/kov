@@ -36,30 +36,66 @@ elif [[ -v release ]] && [[ $2 -eq 0 ]]; then
 	main=1
 fi
 
-# compile and link arguments
-CC="clang"
-COMMON_CFLAGS="-Wall -Wextra"
-DEBUG_CFLAGS="-g"
-RELEASE_CFLAGS="-O3 -ffast-math -DNDEBUG -Wl,-s"
-LFLAGS="-Lvendor/raylib/src -lraylib -lm"
-IFLAGS="-Isrc -Ivendor/raylib/src -Ivendor/raygui/src"
+if [ -v raylib ]; then
+	echo "info: building raylib."
+	target_exists=1
+
+	mkdir -p tmp
+	cd tmp
+
+	RAYLIB_SRC="../vendor/raylib/src"
+	COMMON_CFLAGS="-D_DEFAULT_SOURCE -DPLATFORM_DESKTOP -DGRAPHICS_API_OPENGL_33 -D_GLFW_X11 -std=c99"
+	IFLAGS="-I$RAYLIB_SRC -I$RAYLIB_SRC/external/glfw/include"
+	RAYLIB_C_FILES="$RAYLIB_SRC/rcore.c $RAYLIB_SRC/rshapes.c $RAYLIB_SRC/rtextures.c $RAYLIB_SRC/rtext.c $RAYLIB_SRC/rmodels.c $RAYLIB_SRC/utils.c $RAYLIB_SRC/raudio.c $RAYLIB_SRC/rglfw.c"
+
+	if [ -v release ]; then
+		cflags="$COMMON_CFLAGS -Os -flto"
+		echo "info: release build"
+	else
+		cflags="$COMMON_CFLAGS -O0 -g -Wall -Wextra -Wpedantic"
+		echo "info: debug build"
+	fi
+
+	echo "info: used flags $cflags $IFLAGS"
+	clang -c $RAYLIB_C_FILES $cflags $IFLAGS
+	if [ $? -eq 0 ]; then
+		echo "info: raylib target built successfully."
+	else
+		exit 1
+	fi
+
+	cd ..
+fi
 
 # build targets
 if [ -v main ]; then
 	echo "info: building target main."
-	didbuild=1
+	target_exists=1
+
+	if ! [ -d tmp ]; then
+		echo "error: no tmp directory detected, please rebuild raylib."
+		exit 1
+	fi
+
+	COMMON_CFLAGS="-Wall -Wextra -Wpedantic"
+	COMMON_LFLAGS="-lm -ldl -lpthread -lX11 -lxcb -lGL -lGLX -lXext -lGLdispatch -lXau -lXdmcp"
+	IFLAGS="-Isrc -Ivendor/raylib/src"
+	RAYLIB_O_FILES="tmp/rcore.o tmp/rshapes.o tmp/rtextures.o tmp/rtext.o tmp/rmodels.o tmp/utils.o tmp/raudio.o tmp/rglfw.o"
 
 	if [ -v release ]; then
-		cflags="$COMMON_CFLAGS $RELEASE_CFLAGS"
+		cflags="$COMMON_CFLAGS -Os -ffast-math -flto -DNDEBUG -Wl,-s"
+		lflags="$COMMON_LFLAGS -flto"
 		echo "info: release build"
 	else
-		cflags="$COMMON_CFLAGS $DEBUG_CFLAGS"
+		cflags="$COMMON_CFLAGS -g"
+		lflags="$COMMON_LFLAGS"
 		echo "info: debug build"
 	fi
 
 	mkdir -p out
-	echo "info: used flags $cflags $LFLAGS $IFLAGS"
-	$CC build.c $cflags $LFLAGS $IFLAGS -o out/kov
+
+	echo "info: used flags $cflags $lflags $IFLAGS"
+	clang build.c $RAYLIB_O_FILES $cflags $lflags $IFLAGS -o out/kov
 	if [ $? -eq 0 ]; then
 		echo "info: main target built successfully."
 		rsync -r assets out
@@ -70,7 +106,7 @@ if [ -v main ]; then
 fi
 
 # finally, warn if no build happened.
-if [ ! -v didbuild ]; then
+if [ ! -v target_exists ]; then
 	echo "error: no valid build target specified."
 	exit 1
 fi

@@ -56,10 +56,13 @@ if "%main%"=="1" (
 	where cl >nul 2>nul
 	if NOT %errorlevel% == 0 (
 		echo cl is not found in path, please run vcvarsall.bat manually or use devenv.bat located in this directory.
-		exit /b
+		exit /b 1
 	)
 
-	if not exist tmp echo "no tmp folder detected, please rebuild raylib"
+	if not exist tmp (
+		echo "no tmp folder detected, please rebuild raylib"
+		exit /b 1
+	)
 
 	if not exist out mkdir out
 
@@ -88,6 +91,7 @@ if "%main%"=="1" (
 	if !errorlevel!==0 (
 		echo info: main target built successfully.
 		xcopy ..\assets ..\out\assets /e /s /y
+		echo info: synced assets directory
 		del build.obj
 	) else (
 		exit /b 1
