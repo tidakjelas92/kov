@@ -78,7 +78,7 @@ if [ -v main ]; then
 	fi
 
 	COMMON_CFLAGS="-Wall -Wextra -Wpedantic"
-	COMMON_LFLAGS="-lm -ldl -lpthread -lX11 -lxcb -lGL -lGLX -lXext -lGLdispatch -lXau -lXdmcp"
+	COMMON_LFLAGS="-lm"
 	IFLAGS="-Isrc -Ivendor/raylib/src"
 	RAYLIB_O_FILES="tmp/rcore.o tmp/rshapes.o tmp/rtextures.o tmp/rtext.o tmp/rmodels.o tmp/utils.o tmp/raudio.o tmp/rglfw.o"
 
